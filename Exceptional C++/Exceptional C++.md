@@ -1653,11 +1653,11 @@ If you got all of these answers, then you're definitely on your way to becoming 
 ----
 
 **Problem**
-The "this != &other" test (illustrated below) is a common coding practice intended to prevent self-assignment. Is the condition necessary and/or sufficient to accomplish this? Why or why not? If not, how would you fix it? Remember to distinguish between "protecting against Murphy vs. protecting against Machiavelli."
+The "`this != &other`" test (illustrated below) is a common coding practice intended to prevent self-assignment. Is the condition necessary and/or sufficient to accomplish this? Why or why not? If not, how would you fix it? Remember to distinguish between "protecting against Murphy vs. protecting against Machiavelli."
 
 ``` cpp
-T& T::operator=( const T& other ){
-    if( this != &other ) {  // the test in question
+T& T::operator=(const T& other){
+    if(this != &other) {  // the test in question
         // ...
     }
     return *this;
@@ -1670,7 +1670,9 @@ T& T::operator=( const T& other ){
 Short answer: Technically, it's neither necessary nor sufficient. In practice it's probably fine and may even be fixed in the standard.
 
 **Issue: Exception Safety (Murphy)**
-If operator=() is exception-safe, you don't need to test for self-assignment. There are two efficiency downsides, however: a) if you can test for self-assignment then you can completely optimize away the assignment; and b) often making code exception-safe also makes it less efficient (a.k.a. the "paranoia has a price principle").
+If `operator=()` is exception-safe, you don't need to test for self-assignment. There are two efficiency downsides, however: 
+   a) if you can test for self-assignment then you can completely optimize away the assignment; and 
+   b) often making code exception-safe also makes it less efficient (a.k.a. the "paranoia has a price principle").
 
 **Nonissue: Multiple Inheritance**
 The problem has nothing to do with multiple inheritance, though some have suggested this in the past. The problem is a technical question of how the draft lets you compare pointers. Namely:
@@ -1678,14 +1680,14 @@ The problem has nothing to do with multiple inheritance, though some have sugges
 **Issue: Operator Overloading (Machiavelli)**
 Since classes may provide their own `operator&()`, the test in question may do something completely different than intended. This comes under the heading of "protecting against Machiavelli" because presumably the writer of `operator=()` knows whether or not his class also overloads `operator&()`.
 
-Note that while a class may also provide a T::operator!=(), it's irrelevant since it can't interfere with this test. The reason is that you can't write an `operator!=()` that takes two `T*` parameters since at least one parameter to an overloaded operator must be of class type.
+Note that while a class may also provide a `T::operator!=()`, it's irrelevant since it can't interfere with this test. The reason is that you can't write an `operator!=()` that takes two `T*` parameters since at least one parameter to an overloaded operator must be of class type.
 
 **Postscript #1**
 Here's a "code joke". Believe it or not, it's been tried by well-meaning but clearly misguided coders:
 
 ``` cpp
-T::T( const T& other ) {
-    if( this != &other ) {
+T::T(const T& other) {
+    if(this != &other) {
         // ...
     }
 }
