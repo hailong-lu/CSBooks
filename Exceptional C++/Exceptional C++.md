@@ -1437,19 +1437,18 @@ Here are excerpts from a program with classes that perform their own memory mana
 class B {
 public:
     virtual ~B();
-    void operator delete  ( void*, size_t ) throw();
-    void operator delete[]( void*, size_t ) throw();
-    void f( void*, size_t ) throw();
+    void operator delete  (void*, size_t) throw();
+    void operator delete[](void*, size_t) throw();
+    void f(void*, size_t) throw();
 };
 
 class D : public B {
 public:
-    void operator delete  ( void* ) throw();
-    void operator delete[]( void* ) throw();
+    void operator delete  (void*) throw();
+    void operator delete[](void*) throw();
 };
 
-void f()
-{
+void f() {
     //  Which operator delete is called for each of the
     //  following?  Why, and with what parameters?
     D* pd1 = new D;
@@ -1473,19 +1472,18 @@ void f()
 
 class X {
 public:
-    void* operator new( size_t s, int )
-                     throw( bad_alloc ) {
-        return ::operator new( s );
+    void* operator new(size_t s, int) throw(bad_alloc) {
+        return ::operator new(s);
     }
 };
 
 class SharedMemory {
 public:
-    static void* Allocate( size_t s ) {
-        return OsSpecificSharedMemAllocation( s );
+    static void* Allocate(size_t s) {
+        return OsSpecificSharedMemAllocation(s);
     }
-    static void  Deallocate( void* p, int i ) {
-        OsSpecificSharedMemDeallocation( p, i );
+    static void  Deallocate(void* p, int i) {
+        OsSpecificSharedMemDeallocation(p, i);
     }
 };
 
@@ -1536,8 +1534,7 @@ Answer: Preference. Both are usual deallocation functions, not placement deletes
 However, both classes provide operators `delete` and `delete[]` without providing corresponding operators `new` and `new[]`. This is extremely dangerous. For example, consider what happens if a further-derived class provides its own operator `new` or `new[]`.
 
 ``` cpp
-void f()
-{
+void f(){
     //  Which operator delete is called for each of the
     //  following?  Why, and with what parameters?
     //
@@ -1581,9 +1578,8 @@ The first assignment is fine, but the second assignment is illegal because "`voi
 ``` cpp
 class X {
 public:
-    void* operator new( size_t s, int ) throw( bad_alloc ) 
-	{
-        return ::operator new( s );
+    void* operator new(size_t s, int) throw(bad_alloc) {
+        return ::operator new(s);
     }
 };
 ```
@@ -1591,24 +1587,21 @@ public:
 This invites a memory leak since no corresponding placement delete exists. Similarly below:
 
 ``` cpp
-class SharedMemory 
-{
+class SharedMemory {
 public:
-    static void* Allocate( size_t s ) 
-	{
-        return OsSpecificSharedMemAllocation( s );
+    static void* Allocate(size_t s) {
+        return OsSpecificSharedMemAllocation(s);
     }
-    static void  Deallocate( void* p, int i ) 
-	{
-        OsSpecificSharedMemDeallocation( p, i );
+    
+    static void  Deallocate(void* p, int i) {
+        OsSpecificSharedMemDeallocation(p, i);
     }
 };
 
 class Y {
 public:
-    void* operator new( size_t s, SharedMemory& m ) throw( bad_alloc ) 
-	{
-        return m.Allocate( s );
+    void* operator new(size_t s, SharedMemory& m) throw(bad_alloc) {
+        return m.Allocate(s);
     }
 ```
 
@@ -1623,9 +1616,8 @@ This invites a memory leak, since no operator delete matches this signature. If 
 Further, the memory cannot safely be deleted since the class does not provide a usual operator delete. This means that a base or derived class's operator delete, or the global one, will have to try to deal with this deallocation (almost certainly unsuccessfully, unless you also replace all such surrounding operators delete, which would be onerous and evil).
 
 ``` cpp
-    void  operator delete( void* p, SharedMemory& m, int i ) throw() 
-	{
-        m.Deallocate( p, i );
+    void  operator delete(void* p, SharedMemory& m, int i) throw() {
+        m.Deallocate(p, i);
     }
 };
 ```
@@ -1633,18 +1625,17 @@ Further, the memory cannot safely be deleted since the class does not provide a 
 This operator delete is useless since it can never be called.
 
 ``` cpp
-void operator delete( void* p ) throw() 
+void operator delete(void* p) throw() 
 {
-    SharedMemory::Deallocate( p );
+    SharedMemory::Deallocate(p);
 }
 ```
 
 A serious error, since the replacement global operator delete is going to delete memory allocated by the default `::operator new`, not by `SharedMemory::Allocate()`. The best you can hope for is a quick core dump. Evil.
 
 ``` cpp
-void operator delete( void* p, std::nothrow_t& ) throw() 
-{
-    SharedMemory::Deallocate( p );
+void operator delete(void* p, std::nothrow_t&) throw() {
+    SharedMemory::Deallocate(p);
 }
 ```
 
