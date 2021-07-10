@@ -852,7 +852,7 @@ Most programmers #include many more headers than necessary. Do you? To find out,
 
 Most programmers #include much more than necessary. This can seriously degrade build times, especially when a popular header file includes too many other headers.
 
-In the following header file, what #include directives could be immediately removed without ill effect? Second, what further #includes could be removed given suitable changes, and how? (You may not change the public interfaces of classes X and Y; that is, any changes you make to this header must not affect current client code).
+In the following header file, what `#include` directives could be immediately removed without ill effect? Second, what further #includes could be removed given suitable changes, and how? (You may not change the public interfaces of classes X and Y; that is, any changes you make to this header must not affect current client code).
 
 ``` cpp
 // gotw007.h (implementation file is gotw007.cpp)
@@ -920,7 +920,7 @@ public:
     D    Function1(int, C);
     B&   Function2(B);
     void Function3(std::wostringstream&);
-    std::ostream& print( std::ostream&) const;
+    std::ostream& print(std::ostream&) const;
 private:
     std::string  name_;
     std::list<C> clist_;
@@ -942,39 +942,39 @@ private:
 
    - iostream, because although streams are being used nothing in iostream specifically is being used
    
-   - ostream and sstream, because parameter and return types need only be forward-declared and hence only the iosfwd header is needed (note that there are no comparable 'stringfwd' or 'listfwd' standard headers; iosfwd was introduced for backwards compatibility so as not to break code written for the old non-templated versions of the streams subsystem)
+   - ostream and sstream, because parameter and return types need only be forward-declared and hence only the iosfwd header is needed (note that there are no comparable '`stringfwd`' or '`listfwd`' standard headers; iosfwd was introduced for backwards compatibility so as not to break code written for the old non-templated versions of the streams subsystem)
 
 We cannot immediately remove:
 
-   - a.h, because A is a base class of X
+   - a.h, because `A` is a base class of `X`
    
-   - b.h, because B is a base class of Y
+   - b.h, because `B` is a base class of `Y`
    
-   - c.h, because many current compilers require list<C> be able to see the definition of C (this should be fixed on future versions of those compilers)
+   - c.h, because many current compilers require `list<C>` be able to see the definition of `C` (this should be fixed on future versions of those compilers)
    
-   - d.h, list and string, because X needs to know the size of D and string, and both X and Y need to know the size of list
+   - d.h, list and string, because `X` needs to know the size of `D` and string, and both `X` and `Y` need to know the size of list
 
-Second, consider the #includes that can be removed by hiding the implementation details of X and Y:
+Second, consider the #includes that can be removed by hiding the implementation details of `X` and `Y`:
 
-**2.** We can remove d.h, list and string by letting X and Y use pimpl_'s (that is, the private parts are replaced by pointers to a forward- declared type of implementation object), because then X and Y do not need to know the sizes of D or list or string. This also lets us get rid of c.h, since besides in X::clist_ C objects only appear as parameters and return values.
+**2.** We can remove `d.h`, list and string by letting `X` and `Y` use `pimpl_`'s (that is, the private parts are replaced by pointers to a forward- declared type of implementation object), because then `X` and `Y` do not need to know the sizes of `D` or list or string. This also lets us get rid of `c.h`, since besides in `X::clist_` `C` objects only appear as parameters and return values.
 
-Important Note: The inlined free operator<< may still be inlined and use its ostream parameter, even though ostream has not been defined! This is because you only need the definition if you are going to call member functions, not if you are only going to accept an object and do nothing with it except use it as parameters to other function calls.
+Important Note: The inlined free `operator<<` may still be inlined and use its ostream parameter, even though ostream has not been defined! This is because you only need the definition if you are going to call member functions, not if you are only going to accept an object and do nothing with it except use it as parameters to other function calls.
 
 Finally, consider what we can fix by making other small changes:
 
-**3.** We can remove b.h by noticing that it is a private base class of Y but that B has no virtual functions. The only major reason one would choose private inheritance over composition/containment is to override virtual functions. Hence, instead of inheriting from B, Y should have a member of type B. To remove the b.h header, this member should be in Y's hidden pimpl_ portion.
+**3.** We can remove `b.h` by noticing that it is a private base class of `Y` but that B has no virtual functions. The only major reason one would choose private inheritance over composition/containment is to override virtual functions. Hence, instead of inheriting from `B`, `Y` should have a member of type `B`. To remove the `b.h` header, this member should be in `Y`'s hidden `pimpl_` portion.
 
-**[Guideline]**: Prefer using pimpl_'s (pointers to implementations) to insulate client code from implementation details.
+**[Guideline]**: Prefer using `pimpl_`'s (pointers to implementations) to insulate client code from implementation details.
 
 Excerpted from the GotW coding standards:
 
    - encapsulation and insulation:
    
       - avoid showing private members of a class in its declaration:
-     
-         - use an opaque pointer declared as "struct XxxxImpl* pimpl_" to store private members (incl. both state variables and member functions), e.g., class Map { private: struct MapImpl* pimpl_; }; (Lakos96: 398-405; Meyers92: 111-116; Murray93: 72-74)
+       
+         - use an opaque pointer declared as "`struct XxxxImpl* pimpl_`" to store private members (incl. both state variables and member functions), e.g., `class Map { private: struct MapImpl* pimpl_; };` (Lakos96: 398-405; Meyers92: 111-116; Murray93: 72-74)
 
-**4.** We still can't do anything about a.h since A is used as a public base class, and the IS-A relationship is probably needed and used by client code since A has virtual functions. However, we could at least mitigate this by noticing that X and Y are fundamentally unrelated, and splitting the definitions of classes X and Y into two separate headers (providing the current header as a stub which includes both x.h and y.h, so as not to break existing code). This way, at least y.h does not need to include a.h since it only uses A as a function parameter type, which does not require a definition.
+**4.** We still can't do anything about `a.h` since `A` is used as a public base class, and the `IS-A` relationship is probably needed and used by client code since `A` has virtual functions. However, we could at least mitigate this by noticing that `X` and `Y` are fundamentally unrelated, and splitting the definitions of classes `X` and `Y` into two separate headers (providing the current header as a stub which includes both `x.h` and `y.h`, so as not to break existing code). This way, at least `y.h` does not need to include `a.h` since it only uses `A` as a function parameter type, which does not require a definition.
 
 Putting it all together, we get much cleaner headers:
 
@@ -1048,7 +1048,7 @@ struct YImpl
 }
 ```
 
-Bottom Line: Clients of X need only pay for the #includes of a.h and iosfwd. Current clients of Y need only pay for the #includes of a.h and iosfwd, and if they are later updated to use y.h instead of gotw007.h they need pay for no secondary #includes at all. What an improvement over the original!
+Bottom Line: Clients of `X` need only pay for the #includes of `a.h` and `iosfwd`. Current clients of `Y` need only pay for the #includes of `a.h` and `iosfwd`, and if they are later updated to use `y.h` instead of gotw007.h they need pay for no secondary #includes at all. What an improvement over the original!
 
 
 
