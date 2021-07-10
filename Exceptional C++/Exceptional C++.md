@@ -396,13 +396,14 @@ ostream& operator<<( ostream& os,
 
 
 # 005 Overriding Virtual Functions
-Difficulty: 6 / 10
+**Difficulty: 6 / 10**
 Virtual functions are a pretty basic feature, right? If you can answer questions like this one, then you know them cold.
 
 ----
 
-Problem
+**Problem**
 In your travels through the dusty corners of your company's code archives, you come across the following program fragment written by an unknown programmer. The programmer seems to have been experimenting to see how some C++ features worked. What did the programmer probably expect the program to print, but what is the actual result?
+
 ``` cpp
 #include <iostream>
 #include <complex>
@@ -453,28 +454,28 @@ void main() {
 
 ----
 
-Solution
+**Solution
 First, some style issues:
 
-1. `void main()`
+**1.** `void main()`
 
-This is not one of the legal declarations of main, although many compilers will allow it. Use either `"int main()"` or `"int main( int argc, char* argv[] )"`.
+This is not one of the legal declarations of main, although many compilers will allow it. Use either "`int main()`" or "`int main(int argc, char* argv[])`".
 
-However, note that you still don't need a return statement (though it's good style to report errors to outside callers!)... if main has no return statement, the effect is that of executing "return 0;".
+However, note that you still don't need a return statement (though it's good style to report errors to outside callers!)... if main has no return statement, the effect is that of executing "`return 0;`".
 
-2. `delete pb;`
+**2.** `delete pb;`
 
 This looks innocuous, and it would be if the writer of Base had supplied a virtual destructor. As it is, deleting via a pointer-to-base without a virtual destructor is evil, pure and simple, and corruption is the best thing you can hope for.
 
    **[RULE]** Make base class destructors virtual.
 
-3. `Derived::f(complex<double>)`
+**3.** `Derived::f(complex<double>)`
 
-Derived does not overload `Base::f...` it hides them. This distinction is very important, because it means that `Base::f(int)` and Base::f(double) are not visible in Derived! (Note that certain popular compilers do not even emit a warning for this.)
+Derived does not overload `Base::f`... it hides them. This distinction is very important, because it means that `Base::f(int)` and Base::f(double) are not visible in Derived! (Note that certain popular compilers do not even emit a warning for this.)
 
    **[RULE]** When providing a function with the same name as an inherited function, be sure to bring the inherited functions into scope with a `"using"` declaration if you don't want to hide them.
 
-4. `Derived::g(int i = 10)`
+**4.** `Derived::g(int i = 10)`
 
 Unless you're really out to confuse people, don't change the default parameters of the inherited functions you override. (In general, it's not a bad idea to prefer overloading to parameter defaulting anyway, but that's a subject in itself.) Yes, this is legal C++, and yes, the result is well-defined, and no, don't do it. See below for how this can really confuse people.
 
@@ -491,13 +492,13 @@ void main() {
     b.f(1.0);
 ```
 
-No problem. Calls `Base::f( double )`.
+No problem. Calls `Base::f(double)`.
 
 ```
     d.f(1.0);
 ```
 
-This calls `Derived::f(complex<double>)`. Why? Well, remember that Derived doesn't declare `"using Base:f;"`, and so clearly `Base::f(int)` and `Base::f(double)` can't be called.
+This calls `Derived::f(complex<double>)`. Why? Well, remember that Derived doesn't declare "`using Base:f;`", and so clearly `Base::f(int)` and `Base::f(double)` can't be called.
 
 The programmer may have expected it to call the latter, but in this case won't even get a compile error since fortunately(?) `complex<double>` has an implicit(`*`) conversion from double, and so the compiler sees this as `Derived::f(complex<double>(1.0))`.
 
@@ -513,13 +514,13 @@ Interestingly, even though the `Base* pb` is pointing to a Derived object, this 
     b.g();
 ```
 
-This prints `"10"`, since it simply invokes `Base::g(int)` whose parameter defaults to the value *10*. No sweat.
+This prints `"10"`, since it simply invokes `Base::g(int)` whose parameter defaults to the value \*10\*. No sweat.
 
 ``` cpp
     d.g();
 ```
 
-This prints "`Derived::g() 20`", since it simply invokes `Derived::g(int)` whose parameter defaults to the value *20*. Also no sweat.
+This prints "`Derived::g() 20`", since it simply invokes `Derived::g(int)` whose parameter defaults to the value \*20\*. Also no sweat.
 
 ``` cpp
     pb->g();
