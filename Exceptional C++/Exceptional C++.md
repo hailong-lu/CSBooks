@@ -971,7 +971,7 @@ Excerpted from the GotW coding standards:
    - encapsulation and insulation:
    
       - avoid showing private members of a class in its declaration:
-       
+     
          - use an opaque pointer declared as "`struct XxxxImpl* pimpl_`" to store private members (incl. both state variables and member functions), e.g., `class Map { private: struct MapImpl* pimpl_; };` (Lakos96: 398-405; Meyers92: 111-116; Murray93: 72-74)
 
 **4.** We still can't do anything about `a.h` since `A` is used as a public base class, and the `IS-A` relationship is probably needed and used by client code since `A` has virtual functions. However, we could at least mitigate this by noticing that `X` and `Y` are fundamentally unrelated, and splitting the definitions of classes `X` and `Y` into two separate headers (providing the current header as a stub which includes both `x.h` and `y.h`, so as not to break existing code). This way, at least `y.h` does not need to include `a.h` since it only uses `A` as a function parameter type, which does not require a definition.
@@ -1090,10 +1090,10 @@ private:
 
 **3.** Should containers be exception-neutral? Why or why not? What are the tradeoffs?
 
-**4.** Should containers use exception specifications? For example, should we declare "Stack::Stack() throw( bad_alloc );"?
+**4.** Should containers use exception specifications? For example, should we declare "`Stack::Stack() throw( bad_alloc );`"?
 
 **CHALLENGE**
-With many current compilers, using "try" and "catch" often adds unnecessary overhead to your programs, which would be nice to avoid in this kind of low-level reusable container. Can you implement all Stack member functions as required without ever using "try" or "catch"?
+With many current compilers, using "`try`" and "`catch`" often adds unnecessary overhead to your programs, which would be nice to avoid in this kind of low-level reusable container. Can you implement all Stack member functions as required without ever using "`try`" or "`catch`"?
 
 ----
 
@@ -1111,7 +1111,7 @@ template<class T>
 T Stack<T>::Pop()
 {
     T result; // if empty, return default-constructed T
-    if( vused_ > 0)
+    if(vused_ > 0)
     {
         result = v_[--vused_];
     }
@@ -1172,7 +1172,7 @@ Stack<T>::Stack()
 
 //----- COPY CTOR -------------------------------------------------
 template<class T>
-Stack<T>::Stack( const Stack<T>& other )
+Stack<T>::Stack(const Stack<T>& other)
   : v_(0),      // nothing allocated or used yet
     vsize_(other.vsize_),
     vused_(other.vused_)
@@ -1183,9 +1183,9 @@ Stack<T>::Stack( const Stack<T>& other )
 
 //----- COPY ASSIGNMENT -------------------------------------------
 template<class T>
-Stack<T>& Stack<T>::operator=( const Stack<T>& other ) 
+Stack<T>& Stack<T>::operator=(const Stack<T>& other) 
 {
-    if( this != &other ) 
+    if(this != &other) 
 	{
         T* v_new = NewCopy( other.v_, other.vsize_, other.vsize_ );
         // if we got here, the allocation and copy were okay
@@ -1219,10 +1219,10 @@ unsigned Stack<T>::Count()
 //----- PUSH ------------------------------------------------------
 template<class T>
 void Stack<T>::Push( const T& t ) {
-    if( vused_ == vsize_ )  // grow if necessary
+    if(vused_ == vsize_)  // grow if necessary
     {
         unsigned vsize_new = (vsize_+1)*2; // grow factor
-        T* v_new = NewCopy( v_, vsize_, vsize_new );
+        T* v_new = NewCopy(v_, vsize_, vsize_new);
         // if we got here, the allocation and copy were okay
 
         delete[] v_;    // again, this can't throw
@@ -1239,7 +1239,7 @@ template<class T>
 T Stack<T>::Pop()
 {
     T result;
-    if( vused_ > 0)
+    if(vused_ > 0)
     {
         result = v_[vused_-1];  // if this copy throws, the
         --vused_;               //  decrement isn't done and
@@ -1268,9 +1268,9 @@ T Stack<T>::Pop()
 // alternative version of Pop() that's more exception-safe:
 //
 template<class T>
-void Stack<T>::Pop( T& result )
+void Stack<T>::Pop(T& result)
 {
-    if( vused_ > 0)
+    if(vused_ > 0)
     {
         result = v_[vused_-1];  // if this copy throws, the
         --vused_;               //  decrement isn't done and
@@ -1290,15 +1290,15 @@ void Stack<T>::Pop( T& result )
 //  the exception so that nothing is leaked.
 //
 template<class T>
-T* NewCopy( const T* src, unsigned srcsize, unsigned destsize )
+T* NewCopy(const T* src, unsigned srcsize, unsigned destsize)
 {
-    destsize = max( srcsize, destsize ); // basic parm check
+    destsize = max(srcsize, destsize); // basic parm check
     T* dest = new T[destsize];
     // if we got here, the allocation/ctors were okay
 
     try
     {
-        copy( src, src+srcsize, dest );
+        copy(src, src+srcsize, dest);
     }
     catch(...)
     {
@@ -1320,16 +1320,16 @@ This is currently unspecified. Lately there has been some discussion within the 
 
 Some containers have operations with unavoidable space tradeoffs if they are to be made exception-neutral. Exception-neutrality is a Good Thing in itself, but may not be practical when implementing the strong guarantee requires much more space or time than does implementing the weak guarantee. Often a good compromise is to document which T operations are expected not to throw and then guarantee exception-neutrality based on conformance to those assumptions.
 
-**4.** Should containers use exception specifications? For example, should we declare "Stack::Stack() throw( bad_alloc );"?
+**4.** Should containers use exception specifications? For example, should we declare "`Stack::Stack() throw( bad_alloc );`"?
 
 No, since it is unknown in advance which T operations might throw or what they might throw.
 
-Notice that some container operations (e.g., Count()) simply return a scalar and are known not to throw. While it's possible to declare these with "throw()", there are two possible reasons why you wouldn't: first, it limits you in the future in case you want to change the underlying implementation to a form which could throw; and second, exception specifications incur a performance overhead whether an exception is thrown or not. For widely-used operations, it may be better not to use exception specifications to avoid this overhead.
+Notice that some container operations (e.g., `Count()`) simply return a scalar and are known not to throw. While it's possible to declare these with "`throw()`", there are two possible reasons why you wouldn't: first, it limits you in the future in case you want to change the underlying implementation to a form which could throw; and second, exception specifications incur a performance overhead whether an exception is thrown or not. For widely-used operations, it may be better not to use exception specifications to avoid this overhead.
 
 **CHALLENGE**
-With many current compilers, using "try" and "catch" often adds unnecessary overhead to your programs, which would be nice to avoid in this kind of low-level reusable container. Can you implement all Stack member functions as required without ever using "try" or "catch"?
+With many current compilers, using "`try`" and "`catch`" often adds unnecessary overhead to your programs, which would be nice to avoid in this kind of low-level reusable container. Can you implement all Stack member functions as required without ever using "`try`" or "`catch`"?
 
-Yes, because we only care about catching "...". In general, code of the form
+Yes, because we only care about catching "`...`". In general, code of the form
 
 ``` cpp
     try 
@@ -1358,16 +1358,16 @@ can be rewritten as
     }
 ```
 
-Our solution uses try/catch only in the NewCopy function, so let's illustrate this technique by rewriting NewCopy:
+Our solution uses `try/catch` only in the NewCopy function, so let's illustrate this technique by rewriting NewCopy:
 
 ``` cpp
 template<class T>
-T* NewCopy( const T* src, unsigned srcsize, unsigned destsize )
+T* NewCopy(const T* src, unsigned srcsize, unsigned destsize)
 {
-    destsize = max( srcsize, destsize ); // basic parm check
+    destsize = max(srcsize, destsize); // basic parm check
 
     struct Janitor {
-        Janitor( T* p ) : pa(p) {}
+        Janitor(T* p) : pa(p) {}
         ~Janitor() { if( uncaught_exception() ) delete[] pa; }
         T* pa;
     };
@@ -1376,7 +1376,7 @@ T* NewCopy( const T* src, unsigned srcsize, unsigned destsize )
     // if we got here, the allocation/ctors were okay
     
     Janitor j(dest);
-    copy( src, src+srcsize, dest );
+    copy(src, src+srcsize, dest);
     // if we got here, the copy was okay... otherwise, j
     // was destroyed during stack unwinding and will handle
 	
@@ -1386,7 +1386,7 @@ T* NewCopy( const T* src, unsigned srcsize, unsigned destsize )
 }
 ```
 
-Having said that, I've now talked to several people who've done empirical speed tests. In the case when no exception occurs, try/catch is usually much faster, and can be expected to continue to be faster. However, it is still important to know about this kind of technique because it often yields more elegant and maintainable code, and because some current compilers still produce extremely inefficient code for try/catch in both the exceptional and exception-free code paths.
+Having said that, I've now talked to several people who've done empirical speed tests. In the case when no exception occurs, `try/catch` is usually much faster, and can be expected to continue to be faster. However, it is still important to know about this kind of technique because it often yields more elegant and maintainable code, and because some current compilers still produce extremely inefficient code for `try/catch` in both the exceptional and exception-free code paths.
 
 
 # 009 Memory Management - Part I
