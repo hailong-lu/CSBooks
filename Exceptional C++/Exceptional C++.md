@@ -590,24 +590,24 @@ private:
     double        area_;
 };
 
-Polygon operator+( Polygon& lhs, Polygon& rhs ) {
+Polygon operator+(Polygon& lhs, Polygon& rhs) {
     Polygon ret = lhs;
     int last = rhs.GetNumPoints();
-    for( int i = 0; i < last; ++i ) // concatenate
+    for(int i = 0; i < last; ++i) // concatenate
         ret.AddPoint( rhs.GetPoint(i) );
     return ret;
 }
 
-void f( const Polygon& poly ) {
-    const_cast<Polygon&>(poly).AddPoint( Point(0,0) );
+void f(const Polygon& poly) {
+    const_cast<Polygon&>(poly).AddPoint(Point(0,0));
 }
 
-void g( Polygon& const rPoly ) {
-    rPoly.AddPoint( Point(1,1) );
+void g(Polygon& const rPoly) {
+    rPoly.AddPoint(Point(1,1));
 }
 
 void h( Polygon* const pPoly ) {
-    pPoly->AddPoint( Point(2,2) );
+    pPoly->AddPoint(Point(2,2));
 }
 
 int main() {
@@ -629,7 +629,7 @@ class Polygon {
 public:
     Polygon() : area_(-1) {}
     
-    void AddPoint( const Point pt ) {
+    void AddPoint(const Point pt) {
         InvalidateArea();
         points_.push_back(pt);
     }
@@ -638,7 +638,7 @@ public:
 **1.** Since the point object is passed by value, there is little or no benefit to declaring it const.
 
 ``` cpp
-    Point GetPoint( const int i ) {
+    Point GetPoint(const int i) {
         return points_[i];
     }
 ```
@@ -651,7 +651,7 @@ public:
 
 Note: Lakos (pg. 618) argues against returning const value, and notes that it is redundant for builtins anyway (for example, returning "`const int`"), which he notes may interfere with template instantiation.
 
-**[Guideline]***: When using return-by-value for non-builtin return types, prefer returning a const value.
+   **[Guideline]**: When using return-by-value for non-builtin return types, prefer returning a const value.
 
 ``` cpp
     int GetNumPoints() {
@@ -665,7 +665,7 @@ Note: Lakos (pg. 618) argues against returning const value, and notes that it is
 
 ``` cpp
     double GetArea() {
-        if( area_ < 0 ) // if not yet calculated and cached
+        if(area_ < 0) // if not yet calculated and cached
             CalcArea();     // calculate now
         return area_;
     }
@@ -684,7 +684,7 @@ private:
     void CalcArea() {
         area_ = 0;
         vector<Point>::iterator i;
-        for( i = points_.begin(); i != points_.end(); ++i )
+        for(i = points_.begin(); i != points_.end(); ++i)
             area_ += /* some work */;
     }
 ```
@@ -710,10 +710,10 @@ private:
     int last = rhs.GetNumPoints();
 ```
 
-**12.** Since 'last' should never change, say so with "`const int`".
+**12.** Since '`last`' should never change, say so with "`const int`".
 
 ``` cpp
-    for( int i = 0; i < last; ++i ) // concatenate
+    for(int i = 0; i < last; ++i) // concatenate
         ret.AddPoint(rhs.GetPoint(i));
 ```
 
