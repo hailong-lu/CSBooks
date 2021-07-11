@@ -3203,66 +3203,69 @@ As it turns out, our assumption that no called function has side effects is not 
 
 
 # 022 Object Lifetimes - Part I
-Difficulty: 5 / 10
+**Difficulty: 5 / 10**
 "To be, or not to be..." When does an object actually exist? This problem considers when an object is safe to use.
 
+----
 
-
-Problem
+**Problem**
 Critique the following code fragment. Is the code in #2 safe and/or legal? Explain.
 ``` cpp
-    void f() {
-      T t(1);
-      T& rt = t;
-      // #1: do something with t or rt
-      t.~T();
-      new (&t) T(2);
-      // #2: do something with t or rt
-    } // t is destroyed again
+void f() {
+    T t(1);
+    T& rt = t;
+    // #1: do something with t or rt
+    t.~T();
+    new (&t) T(2);
+    // #2: do something with t or rt
+}   // t is destroyed again
 ```
 
-Solution
+----
+
+**Solution**
 Yes, #2 is safe and legal (if you get to it), but:
+   
+   a) the function as a whole is not safe; and
+   
+   b) it's a bad habit to get into.
 
-a) the function as a whole is not safe; and
+**Why #2 Is Safe (If You Get To It)**
+The draft explicitly allows this code. The reference rt is not invalidated by the in-place destruction and reconstruction. (Of course, you can't use t or rt between the `t.~T()` and the placement new, since during that time no object exists. We're also assuming that `T::operator&()` hasn't been overloaded to do something other than return the object's address.)
 
-b) it's a bad habit to get into.
+The reason we say #2 is safe "if you get to it" is that `f()` as a whole may not be exception-safe:
 
-Why #2 Is Safe (If You Get To It)
-The draft explicitly allows this code. The reference rt is not invalidated by the in-place destruction and reconstruction. (Of course, you can't use t or rt between the t.~T() and the placement new, since during that time no object exists. We're also assuming that T::operator&() hasn't been overloaded to do something other than return the object's address.)
+**Why the Function Is Not Safe**
+If T's constructor may throw in the `T(2)` call, then `f()` is not exception-safe. Consider why: If the `T(2)` call throws, then no new object has been reconstructed in the '`t`' memory area, yet at the end of the function `T::~T()` is naturally called (since t is an automatic variable) and "t is destroyed again" like the comment says. That is, '`t`' will be constructed once but destroyed twice (oops). This is likely to create unpredictable side effects, such as core dumps.
 
-The reason we say #2 is safe "if you get to it" is that f() as a whole may not be exception-safe:
-
-Why the Function Is Not Safe
-If T's constructor may throw in the T(2) call, then f() is not exception-safe. Consider why: If the T(2) call throws, then no new object has been reconstructed in the 't' memory area, yet at the end of the function T::~T() is naturally called (since t is an automatic variable) and "t is destroyed again" like the comment says. That is, 't' will be constructed once but destroyed twice (oops). This is likely to create unpredictable side effects, such as core dumps.
-
-Why This Is a Bad Habit
-Ignoring the exception safety issues, the code happens to work in this setting because the programmer knows the complete type of the object being constructed and destroyed. That is, it was a T and is being destroyed and reconstructed as a T.
+**Why This Is a Bad Habit**
+Ignoring the exception safety issues, the code happens to work in this setting because the programmer knows the complete type of the object being constructed and destroyed. That is, it was a `T` and is being destroyed and reconstructed as a `T`.
 
 This technique is rarely if ever necessary in real code, and is a very bad habit to get into because it's fraught with (sometimes subtle) dangers if it appears in a member function:
 ``` cpp
-    void T::f( int i ) {
-      this->~T();
-      new (this) T(i);
-    }
+void T::f( int i ) {
+    this->~T();
+    new (this) T(i);
+}
 ```
 Now is this technique safe? In general, No. Consider the following code:
 ``` cpp
-    class U : /*...*/ public T { /* ... */ };
+class U : /*...*/ public T { /* ... */ };
 
-    void f() {
-      /*AAA*/ t(1);
-      /*BBB*/& rt = t;
-      // #1: do something with t or rt
-      t.f(2);
-      // #2: do something with t or rt
-    } // t is destroyed again
+void f() {
+    /*AAA*/ t(1);
+    /*BBB*/& rt = t;
+    // #1: do something with t or rt
+    t.f(2);
+    // #2: do something with t or rt
+}   // t is destroyed again
 ```
-If "/*AAA*/" is "T", the code in #2 will still work, even if "/*BBB*/" is not "T" (it could be a base class of T).
+If "`/*AAA*/`" is "`T`", the code in #2 will still work, even if "`/*BBB*/`" is not "`T`" (it could be a base class of `T`).
 
-If "/*AAA*/" is "U", all bets are off no matter what "/*BBB*/" is. Probably the best you can hope for is an immediate core dump, because the call t.f() "slices" the object. Here, the slicing issue is that t.f() replaces the original object with another object of a different type \-\- that is, a T instead of a U. Even if you're willing to write nonportable code, there's no way of knowing whether the object layout of a T is even usable as a U when superimposed in memory where a U used to be. Chances are good that it's not. Don't go there... this is never a good practice.
+If "`/*AAA*/`" is "`U`", all bets are off no matter what "`/*BBB*/`" is. Probably the best you can hope for is an immediate core dump, because the call `t.f()` "slices" the object. Here, the slicing issue is that `t.f()` replaces the original object with another object of a different type \-\- that is, a `T` instead of a `U`. Even if you're willing to write nonportable code, there's no way of knowing whether the object layout of a `T` is even usable as a `U` when superimposed in memory where a `U` used to be. Chances are good that it's not. Don't go there... this is never a good practice.
 
-This GotW has covered some basic safety and slicing issues of in-place destruction and reconstruction. This sets the stage for the followup question in GotW #23: Object Lifetimes - Part II.
+This GotW has covered some basic safety and slicing issues of in-place destruction and reconstruction. This sets the stage for the followup question in [GotW #23: Object Lifetimes - Part II](http://www.gotw.ca/gotw/023.htm).
+
 
 
 # 023 Object Lifetimes - Part II
