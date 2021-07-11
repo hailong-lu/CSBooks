@@ -3061,150 +3061,146 @@ One purpose of this GotW was to demonstrate just how many invisible execution pa
 
 
 # 021 Code Complexity - Part II
-Difficulty: 7 / 10
+**Difficulty: 7 / 10**
 The challenge: Take the three-line function from GotW #20 and make it strongly exception-safe. This exercise illustrates some important lessons about exception safety.
 
+----
 
-
-Problem
+**Problem**
 Consider again the function from GotW #20. Is it exception-safe (works properly in the presence of exceptions) and exception-neutral (propagates all exceptions to the caller)?
+
 ``` cpp
-  String EvaluateSalaryAndReturnName( Employee e )
-  {
-    if( e.Title() == "CEO" || e.Salary() > 100000 )
-    {
-      cout << e.First() << " " << e.Last()
-           << " is overpaid" << endl;
+String EvaluateSalaryAndReturnName(Employee e) {
+    if(e.Title() == "CEO" || e.Salary() > 100000) {
+        cout << e.First() << " " << e.Last() << " is overpaid" << endl;
     }
     return e.First() + " " + e.Last();
-  }
+}
 ```
+
 Explain your answer. If it is exception-safe, does it support the basic guarantee or the strong guarantee? If not, how must it be changed to support either guarantee?
 
 Assume that all called functions are exception-safe (might throw but do not have side effects if they do throw), and that any objects being used, including temporaries, are exception-safe (clean up their resources when destroyed).
 
-Background: The Basic and Strong Guarantees
-For details on the basic and strong guarantees, see my articles in the September and November/December 1997 issues of C++ Report. In brief, the first guarantees destructibility and no leaks, while the second additionally guarantees full commit-or-rollback semantics.
+**Background: The Basic and Strong Guarantees**
+For details on the basic and strong guarantees, see [my articles in the September and November/December 1997 issues of C++ Report](http://www.awlonline.com/cseng/meyerscddemo/DEMO/MAGAZINE/SU_FRAME.HTM). In brief, the first guarantees destructibility and no leaks, while the second additionally guarantees full commit-or-rollback semantics.
 
+----
 
-
-Solution
+**Solution**
 Consider again the function from GotW #20. Is it exception-safe (works properly in the presence of exceptions) and exception-neutral (propagates all exceptions to the caller)?
+
 ``` cpp
-  String EvaluateSalaryAndReturnName( Employee e )
-  {
-    if( e.Title() == "CEO" || e.Salary() > 100000 )
-    {
-      cout << e.First() << " " << e.Last()
-           << " is overpaid" << endl;
+String EvaluateSalaryAndReturnName(Employee e) {
+    if(e.Title() == "CEO" || e.Salary() > 100000) {
+        cout << e.First() << " " << e.Last() << " is overpaid" << endl;
     }
     return e.First() + " " + e.Last();
-  }
+}
 ```
-A Word About Assumptions
+
+**A Word About Assumptions**
 As the problem stated, we will assume that all called functions \-\- including the stream functions \-\- are exception-safe (might throw but do not have side effects), and that any objects being used, including temporaries, are exception-safe (clean up their resources when destroyed).
 
 Streams happen to throw a monkey wrench into this because of their possible "un-rollbackable" side effects. For example, operator<< might throw after emitting part of a string which can't be "un-emitted"; also, the stream's error state may be set. We will ignore those issues for the most part; the point of this discussion is to examine how to make a function exception-safe when the function is specified to have two distinct side effects.
 
-Basic vs. Strong Guarantees
+**Basic vs. Strong Guarantees**
 As written, this function satisfies the basic guarantee: in the presence of exceptions, the function does not leak resources.
 
 This function does not satisfy the strong guarantee. The strong guarantee is that, if the function fails due to an exception, program state must not be changed. This function, however, has two distinct side effects (as hinted at in the function's name):
-
-1. An "...overpaid..." message is emitted to cout.
-
-2. A name string is returned.
+   
+   1. An "...overpaid..." message is emitted to cout.
+   
+   2. A name string is returned.
 
 As far as the latter is concerned, the function already meets the strong guarantee, since if an exception occurs the value will never be returned. As far as the former is concerned, the function is not exception-safe for two reasons:
-
-1. If an exception is thrown after the first part of the message has been emitted to cout but before the message has been completed (e.g., if the fourth << throws), then a partial message was emitted to cout.[1]
-
-2. If the message was emitted successfully but an exception occurs later in the function (e.g., during the assembly of the return value), then a message was emitted to cout even though the function failed because of an exception.
+   
+   1. If an exception is thrown after the first part of the message has been emitted to cout but before the message has been completed (e.g., if the fourth << throws), then a partial message was emitted to cout.[1]
+   
+   2. If the message was emitted successfully but an exception occurs later in the function (e.g., during the assembly of the return value), then a message was emitted to cout even though the function failed because of an exception.
 
 Instead, to meet the strong guarantee, the behaviour should be that either both effects are completed, or an exception is thrown and neither effect is performed.
 
 Can we accomplish this? Here's one way we might try it (call this Attempt #1):
-``` cpp
-  String EvaluateSalaryAndReturnName( Employee e )
-  {
-    String result = e.First() + " " + e.Last();
 
-    if( e.Title() == "CEO" || e.Salary() > 100000 )
+``` cpp
+String EvaluateSalaryAndReturnName(Employee e) {
+    String result = e.First() + " " + e.Last();
+    
+    if(e.Title() == "CEO" || e.Salary() > 100000)
     {
-      String message = e.First() + " " + e.Last()
-                                 + " is overpaid\n";
-      cout << message;
+        String message = e.First() + " " + e.Last() + " is overpaid\n";
+        cout << message;
     }
     return result;
-  }
+}
 ```
+
 This isn't bad. Note that we've replaced the endl with a newline character (which isn't exactly equivalent) in order to get the entire string into one << call. (Of course, this doesn't guarantee that the underlying stream system won't itself fail partway through writing the message, resulting in incomplete output, but we've done the best we can at this high level.)
 
-A Little Bothersome Issue
+**A Little Bothersome Issue**
 We still have one minor quibble, however, as illustrated by the following client code:
+
 ``` cpp
-  String theName;
-  theName = EvaluateSalaryAndReturnName( bob );
+    String theName;
+    theName = EvaluateSalaryAndReturnName( bob );
 ```
+
 The String copy constructor is invoked because the result is returned by value, and the copy assignment operator is invoked to copy the result into theName. If either copy fails, then the function has completed its side effects (since the message was completely emitted and the return value was completely constructed) but the result has been irretrievably lost (oops).
 
 Can we do better, and perhaps avoid the problem by avoiding the copy? For example, we could let the function take a non-const String reference parameter and place the return value in that:
-``` cpp
-  void EvaluateSalaryAndReturnName( Employee e,
-                                    String&  r );
-  {
-    String result = e.First() + " " + e.Last();
 
-    if( e.Title() == "CEO" || e.Salary() > 100000 )
-    {
-      String message = e.First() + " " + e.Last()
-                                 + " is overpaid\n";
-      cout << message;
+``` cpp
+void EvaluateSalaryAndReturnName(Employee e, String& r) {
+    String result = e.First() + " " + e.Last();
+    
+    if(e.Title() == "CEO" || e.Salary() > 100000) {
+        String message = e.First() + " " + e.Last() + " is overpaid\n";
+        cout << message;
     }
     r = result;
-  }
+}
 ```
+
 Unfortunately, the assignment to r might still fail, which leaves us with one side effect complete and the other incomplete. Bottom line, this attempt doesn't really buy us much.
 
 We might try returning the result in an auto_ptr (call this Attempt #3):
-``` cpp
-  auto_ptr<String>
-  EvaluateSalaryAndReturnName( Employee e );
-  {
-    auto_ptr<String> result
-        = new String( e.First() + " " + e.Last() );
 
-    if( e.Title() == "CEO" || e.Salary() > 100000 )
-    {
-      String message = e.First() + " " + e.Last()
-                                 + " is overpaid\n";
-      cout << message;
+``` cpp
+auto_ptr<String> EvaluateSalaryAndReturnName( Employee e ) {
+    auto_ptr<String> result = new String(e.First() + " " + e.Last());
+    
+    if(e.Title() == "CEO" || e.Salary() > 100000) {
+        String message = e.First() + " " + e.Last() + " is overpaid\n";
+        cout << message;
     }
     return result;  // rely on transfer of ownership
-  }
+}
 ```
+
 This does the trick, since we have effectively hidden all of the work to construct the second side effect (the return value) while ensuring that it can be safely returned to the caller using only nonthrowing operations after the first side effect has completed (the printing of the message). The price? As often happens when implementing strong exception safety, the strong safety comes at the cost of efficiency \-\- here, the extra dynamic memory allocation.
 
-Exception Safety and Multiple Side Effects
+**Exception Safety and Multiple Side Effects**
 In this case, it turned out to be possible in Attempt #3 to perform both side effects with essentially commit-or-rollback semantics (except for the stream issues). The reason it was possible is that there turned out to be a technique by which the two effects could be performed atomically... that is, all of the "real" preparatory work for both could be completed in such a way that actually performing the visible side effects could be done using only nonthrowing operations.
 
 Even though we were lucky this time, it's not always that simple: It's impossible to write strongly exception-safe functions that have two or more unrelated side effects that cannot be performed atomically (for example, what if the two side effects had been to emit one message to cout and another to cerr?), since the strong guarantee is that in the presence of exceptions "program state will remain unchanged"... in other words, if there's an exception, there must be no side effects. When you come across a case where the two side effects cannot be made to work atomically, usually the only way to get strong exception safety is to split the one function into two others that can be performed atomically.
 
 This GotW should illustrate three important things:
+   
+   1. Providing the strong exception safety guarantee often (but not always) requires you to trade off performance.
+   
+   2. If a function has multiple unrelated side effects, it cannot always be made strongly exception-safe. If not, it can only be done by splitting the function it into several functions each of whose side effects can be performed atomically.
+   
+   3. Not all functions need to be strongly exception-safe. Both the original code and Attempt #1 satisfy the basic guarantee. For many clients, Attempt #1 is sufficient and minimizes the opportunity for side effects to occur in the exceptional situations, without requiring the performance tradeoffs of Attempt #3.
 
-1. Providing the strong exception safety guarantee often (but not always) requires you to trade off performance.
-
-2. If a function has multiple unrelated side effects, it cannot always be made strongly exception-safe. If not, it can only be done by splitting the function it into several functions each of whose side effects can be performed atomically.
-
-3. Not all functions need to be strongly exception-safe. Both the original code and Attempt #1 satisfy the basic guarantee. For many clients, Attempt #1 is sufficient and minimizes the opportunity for side effects to occur in the exceptional situations, without requiring the performance tradeoffs of Attempt #3.
-
-Postscript: Streams and Side Effects
+**Postscript: Streams and Side Effects**
 As it turns out, our assumption that no called function has side effects is not entirely true. In particular, there is no way to guarantee that the stream operations will not fail after partly emitting a result. This means that we can't get true commit-or-rollback fidelity from any function that performs stream output, at least not on these standard streams. Another issue is that, if the stream output fails, the stream state will have changed. We currently do not check for that or recover from it, but it is possible to further refine the function to catch stream exceptions and reset cout's error flags before rethrowing the exception to the caller.
 
  
-
-Notes
+**Notes**
 1. If you're thinking that it's a little pedantic to worry about whether a message is completely cout'ed or not, you're partly right. In this case, maybe no one would care. However, the same principle applies to any function that attempts to perform two side effects, and that's why the following discussion is useful.
+
+
 
 # 022 Object Lifetimes - Part I
 Difficulty: 5 / 10
