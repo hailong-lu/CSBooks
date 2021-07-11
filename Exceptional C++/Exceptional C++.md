@@ -2027,85 +2027,86 @@ The purpose of this GotW was to provoke discussion about major (and even missing
 
 
 # 014 Class Relationships - Part I
-Difficulty: 5 / 10
+**Difficulty: 5 / 10**
 How are your OO design skills? This GotW illustrates a common class design mistake that still catches many programmers.
 
 ----
 
-Problem
+**Problem**
 A networking application has two different kinds of communications sessions, each with its own message protocol. The two protocols have similarities (some computations and even some messages are the same), and so the programmer has come up with the following design to encapsulate the common computations and messages in a BasicProtocol class:
+
 ```
 class BasicProtocol /* : possible base classes */ {
 public:
     BasicProtocol();
     virtual ~BasicProtocol();
-    bool BasicMsgA( /*...*/ );
-    bool BasicMsgB( /*...*/ );
-    bool BasicMsgC( /*...*/ );
+    bool BasicMsgA(/*...*/);
+    bool BasicMsgB(/*...*/);
+    bool BasicMsgC(/*...*/);
 };
 
 class Protocol1 : public BasicProtocol {
 public:
     Protocol1();
     ~Protocol1();
-    bool DoMsg1( /*...*/ );
-    bool DoMsg2( /*...*/ );
-    bool DoMsg3( /*...*/ );
-    bool DoMsg4( /*...*/ );
+    bool DoMsg1(/*...*/);
+    bool DoMsg2(/*...*/);
+    bool DoMsg3(/*...*/);
+    bool DoMsg4(/*...*/);
 };
 
 class Protocol2 : public BasicProtocol {
 public:
     Protocol2();
     ~Protocol2();
-    bool DoMsg1( /*...*/ );
-    bool DoMsg2( /*...*/ );
-    bool DoMsg3( /*...*/ );
-    bool DoMsg4( /*...*/ );
-    bool DoMsg5( /*...*/ );
+    bool DoMsg1(/*...*/);
+    bool DoMsg2(/*...*/);
+    bool DoMsg3(/*...*/);
+    bool DoMsg4(/*...*/);
+    bool DoMsg5(/*...*/);
 };
 ```
+
 The member functions of each derived classes call the base functions as needed to perform the common work, but perform the actual transmissions themselves. Each class may have additional members, but you can assume that all significant members are shown.
 
 Comment on this design. Is there anything you would change? If so, why?
 
 ----
 
-Solution
+**Solution**
 This GotW illustrates a very common pitfall in OO class relationship design. To recap, classes Protocol1 and Protocol2 are publicly derived from a common base class BasicProtocol which performs some common work.
 
 A key to identifying the problem is the following sentence:
 
-The member functions of each derived classes call the base functions as needed to perform the common work, but perform the actual transmissions themselves.
+   The member functions of each derived classes call the base functions as needed to perform the common work, but perform the actual transmissions themselves.
 
 Here we have it: This is clearly describing an "is implemented in terms of" relationship, which in C++ is spelled either "private inheritance" or "membership." Unfortunately, many people still frequently misspell it as "public inheritance," thereby confusing implementation inheritance with interface inheritance. The two are not the same thing, and that confusion is at the root of the problem here.[1]
 
 In a little more detail, here are several clues that help indicate this problem:
 
-1. BasicProtocol provides no virtual functions (other than the destructor, which we'll get to in a minute).[2] This means that it is not intended to be used polymorphically, which is a strong hint against public inheritance.
-
-2. BasicProtocol has no protected functions or members. This means that there is no "derivation interface," which is a strong hint against any inheritance at all, either public or private.
-
-3. BasicProtocol encapsulates common work, but as described it does not seem to actually perform its own transmissions as the derived classes do. This means that a BasicProtocol object does not WORK-LIKE-A derived protocol object, nor is it USABLE-AS-A derived protocol object. Public inheritance should be used to model one thing and one thing only: a true interface IS-A relationship that obeys the Liskov substitution principle. For greater clarity, I usually call this WORKS-LIKE-A or USABLE-AS-A.[3]
-
-4. The derived classes use BasicProtocol's public interface only. This means that they do not benefit from being derived classes, and could as easily perform their work using a separate helper object of type BasicProtocol.
+  1. BasicProtocol provides no virtual functions (other than the destructor, which we'll get to in a minute).[2] This means that it is not intended to be used polymorphically, which is a strong hint against public inheritance.
+  
+  2. BasicProtocol has no protected functions or members. This means that there is no "derivation interface," which is a strong hint against any inheritance at all, either public or private.
+  
+  3. BasicProtocol encapsulates common work, but as described it does not seem to actually perform its own transmissions as the derived classes do. This means that a BasicProtocol object does not WORK-LIKE-A derived protocol object, nor is it USABLE-AS-A derived protocol object. Public inheritance should be used to model one thing and one thing only: a true interface IS-A relationship that obeys the Liskov substitution principle. For greater clarity, I usually call this WORKS-LIKE-A or USABLE-AS-A.[3]
+  
+  4. The derived classes use BasicProtocol's public interface only. This means that they do not benefit from being derived classes, and could as easily perform their work using a separate helper object of type BasicProtocol.
 
 This means we have a few cleanup issues: First, since BasicProtocol is clearly not designed to be derived from, its virtual destructor is unnecessary and should be eliminated. Second, BasicProtocol should probably be renamed to something less misleading, such as MessageCreator.
 
 Once we've made those changes, which option should be used to model this "is implemented in terms of" relationship: private inheritance, or membership? The answer is pretty easy to remember:
 
-Guideline: When modelling "is implemented in terms of," always prefer membership. Use private inheritance only when inheritance is absolutely necessary, that is, when you need access to protected members or you need to override a virtual function. Never use public inheritance for code reuse.
+**[Guideline]:** When modelling "is implemented in terms of," always prefer membership. Use private inheritance only when inheritance is absolutely necessary, that is, when you need access to protected members or you need to override a virtual function. Never use public inheritance for code reuse.
 
 Using membership forces a better separation of concerns since the using class is a normal client with access to only the used class' public interface. Prefer it, and you'll find that your code is cleaner, easier to read, and easier to maintain. In short, your code will cost less!
 
- 
-
-Notes
+**Notes**
 1. Incidentally, programmers in the habit of making this mistake (using public inheritance for implementation) usually end up creating deep inheritance hierarchies. This greatly increases the maintenance burden by adding unnecessary complexity, forcing users to learn the interfaces of many classes even when all they want to do is use a specific derived class. It can also impact memory use and program performance by adding unnecessary vtables and indirections to classes which do not really need them. If you find yourself frequently creating deep inheritance hierarchies, you should review your design style to see if you've picked up this bad habit. Deep hierarchies are rarely needed and almost never good... and if you don't believe that, thinking that OO just isn't OO without lots of inheritance, a good example to look at is the standard library.
 
 2. Even if BasicProtocol were itself derived from another class, we come to the same conclusion because it still does not provide any new virtual functions. If some base class does provide virtual functions, then it's that remote base class that's intended to be used polymorphically, not BasicProtocol itself, and so if anything we should be deriving from that remote base instead.
 
 3. Yes, sometimes when you inherit publicly to get an interface, some implementation can come along too if the base class has both an interface that you want and some implementation of its own. This is nearly always possible to design away (see the next GotW), but it's not always necessary to take the true purist approach of "one responsibility per class."
+
 
 
 # 015 Class Relationships - Part II
