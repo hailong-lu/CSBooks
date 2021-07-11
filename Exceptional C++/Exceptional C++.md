@@ -2110,22 +2110,23 @@ Using membership forces a better separation of concerns since the using class is
 
 
 # 015 Class Relationships - Part II
-Difficulty: 6 / 10
+**Difficulty: 6 / 10**
 Design patterns are an important tool in writing reusable code. Do you recognize the patterns used in this GotW? If so, can you improve them?
 
+----
 
-
-Problem
+**Problem**
 A database manipulation program often needs to do some work on every record (or selected records) in a given table, by first performing a read-only pass through the table to cache information about which records need to be processed and then performing a second pass to actually make the changes.
 
 Instead of rewriting much of the common logic each time, a programmer has tried to provide a generic reusable framework in the following abstract class. The intent is that the abstract class should encapsulate the repetitive work by: first, compiling a list of table rows on which work needs to be done; and second, performing the work on each affected row. Derived classes are responsible for providing the details of their specific operations.
+
 ``` cpp
 //---------------------------------------------------
 // File gta.h
 //---------------------------------------------------
 class GenericTableAlgorithm {
 public:
-    GenericTableAlgorithm( const string& table );
+    GenericTableAlgorithm(const string& table);
     virtual ~GenericTableAlgorithm();
     
     // Process() returns true iff successful.
@@ -2143,7 +2144,7 @@ private:
     // included in the ones to be processed.  The
     // default action is to include every row.
     //
-    virtual bool Filter( const Record& ) {
+    virtual bool Filter(const Record&) {
       return true;
     }
     
@@ -2154,12 +2155,14 @@ private:
     // will be read twice, but assume that that is
     // necessary and not an efficiency consideration.)
     //
-    virtual bool ProcessRow( const PrimaryKey& ) =0;
+    virtual bool ProcessRow(const PrimaryKey&) =0;
     
     class GenericTableAlgorithmImpl* pimpl_; // MYOB
 };
 ```
+
 For example, the client code to derive a concrete worker class and use it in a mainline looks something like this:
+
 ``` cpp
 class MyAlgorithm : public GenericTableAlgorithm {
     // ... override Filter() and ProcessRow() do
@@ -2171,66 +2174,64 @@ int main( int, char*[] ) {
     a.Process();
 }
 ```
+
 The questions:
 
-1. This is a good design and implements a well-known design pattern. Which pattern is this? Why is it useful here?
+**1.** This is a good design and implements a well-known design pattern. Which pattern is this? Why is it useful here?
 
-2 Without changing the fundamental design, critique the way this design was executed. What might you have done differently? What is the purpose of the "pimpl_" member?
+**2.** Without changing the fundamental design, critique the way this design was executed. What might you have done differently? What is the purpose of the "pimpl_" member?
 
-3 This design can, in fact, be substantially improved. What are GenericTableAlgorithm's responsibilities? If more than one, how could they be better encapsulated? Explain how your answer affects the class' reusability, especially its extensibility.
+**3.** This design can, in fact, be substantially improved. What are GenericTableAlgorithm's responsibilities? If more than one, how could they be better encapsulated? Explain how your answer affects the class' reusability, especially its extensibility.
 
+----
 
-
-Solution
-1. This is a good design and implements a well-known design pattern. Which pattern is this? Why is it useful here?
+**Solution**
+**1.** This is a good design and implements a well-known design pattern. Which pattern is this? Why is it useful here?
 
 This is the Template Method pattern (not to be confused with C++ templates).[1] It's useful because we can generalize a common way of doing something that always follows the same steps, and only the details may differ and can be supplied by a concrete derived class.
 
 (Note: The pimpl_ idiom is superficially similar to Bridge[1], but here it's only intended to hide this particular class' own implementation as a compilation dependency firewall, not to act as a true extensible bridge.)
 
-2. Without changing the fundamental design, critique the way this design was executed. What might you have done differently? What is the purpose of the "pimpl_" member?
+**2.** Without changing the fundamental design, critique the way this design was executed. What might you have done differently? What is the purpose of the "pimpl_" member?
 
 This design uses bools as return codes, with apparently no other way (status codes or exceptions) of reporting failures. Depending on the requirements, this may be fine, but it's something to note.
 
 The (intentionally pronounceable) pimpl_ member nicely hides the implementation behind an opaque pointer. The struct that pimpl_ points to will contain the private member functions and member variables, so that any change to them will not require client code to recompile. This is an important technique documented by Lakos[2] and others, because while it's a little annoying to code it does help compensate for C++'s lack of a module system.
 
-3. This design can, in fact, be substantially improved. What are GenericTableAlgorithm's responsibilities? If more than one, how could they be better encapsulated? Explain how your answer affects the class' reusability, especially its extensibility.
+**3.** This design can, in fact, be substantially improved. What are GenericTableAlgorithm's responsibilities? If more than one, how could they be better encapsulated? Explain how your answer affects the class' reusability, especially its extensibility.
 
 GenericTableAlgorithm can be substantially improved because it currently holds two jobs. Just as humans get stressed when they have to hold two jobs \-\- because that means they're loaded up with extra and competing responsibilities \-\- so too this class could benefit from adjusting its focus.
 
 In the original version, GenericTableAlgorithm is burdened with two different and unrelated responsibilities which can be effectively separated, since the two responsibilities are to support entirely different audiences. In short, they are:
 
-1. Client code USES the (suitably specialized) generic algorithm.
-
-2. GenericTableAlgorithm USES the specialized concrete "details" class to specialize its operation for a specific case or usage.
+   1. Client code USES the (suitably specialized) generic algorithm.
+   
+   2. GenericTableAlgorithm USES the specialized concrete "details" class to specialize its operation for a specific case or usage.
 
 That said, let's look at some improved code:
+
 ``` cpp
 //---------------------------------------------------
 // File gta.h
 //---------------------------------------------------
 
-// Responsibility #1: Providing a public interface
-// that encapsulates common functionality as a
-// template method.  This has nothing to do with
-// inheritance relationships, and can be nicely
-// isolated to stand on its own in a better-focused
-// class.  The target audience is external users of
-// GenericTableAlgorithm.
-//
+// Responsibility #1: Providing a public interface that encapsulates 
+// common functionality as a template method.  This has nothing to do
+// with inheritance relationships, and can be nicely isolated to stand
+// on its own in a better-focused class.  
+// The target audience is external users of GenericTableAlgorithm.
+
 class GTAClient;
 
 class GenericTableAlgorithm {
 public:
     // Ctor now takes a concrete implementation object.
-    //
-    GenericTableAlgorithm( const string& table,
-                           GTAClient&    worker );
+
+    GenericTableAlgorithm(const string& table, GTAClient& worker);
     
-    // Since we've separated away the inheritance
-    // relationships, the dtor doesn't need to be
-    // virtual.  In fact, we may not need it at all.
-    //
+    // Since we've separated away the inheritance relationships, the dtor
+    // doesn't need to be virtual. In fact, we may not need it at all.
+
     ~GenericTableAlgorithm();
     
     bool Process(); // unchanged
@@ -2245,27 +2246,27 @@ private:
 // File gtaclient.h
 //---------------------------------------------------
 
-// Responsibility #2: Providing an abstract interface
-// for extensibility.  This is an implementation
-// detail of GenericTableAlgorithm that has nothing
-// to do with its external clients, and can be nicely
-// separated out into a better-focused abstract
-// protocol class.  The target audience is writers of
-// concrete "implementation detail" classes which
-// work with (and extend) GenericTableAlgorithm.
-//
+// Responsibility #2: Providing an abstract interface for extensibility.  
+// This is an implementation detail of GenericTableAlgorithm that has nothing
+// to do with its external clients, and can be nicely separated out into a 
+// better-focused abstract protocol class.  The target audience is writers of 
+// concrete "implementation detail" classes which work with (and extend) 
+// GenericTableAlgorithm.
+
 class GTAClient {
 public:
     virtual ~GTAClient() =0;
     
-    virtual bool Filter( const Record& ) {
+    virtual bool Filter(const Record&) {
         return true;
     }
     
-    virtual bool ProcessRow( const PrimaryKey& ) =0;
+    virtual bool ProcessRow(const PrimaryKey&) =0;
 };
 ```
+
 As shown, these two classes should appear in separate header files. With these changes, how does this now look to the client code? The answer is, pretty much the same:
+
 ``` cpp
 class MyWorker : public GTAClient {
     // ... override Filter() and ProcessRow() do
@@ -2274,24 +2275,26 @@ class MyWorker : public GTAClient {
 ```
 
 ``` cpp
-int main( int, char*[] ) {
-    GenericTableAlgorithm a( "Customer", MyWorker() );
+int main(int, char*[]) {
+    GenericTableAlgorithm a("Customer", MyWorker());
     a.Process();
 }
 ```
+
 While this may look pretty much the same, consider three important effects:
 
-1. What if GenericTableAlgorithm's common public interface changes (e.g., a new public member is added)? In the original version, all concrete worker classes would have to be recompiled because they are derived from GenericTableAlgorithm. In this version, any change to GenericTableAlgorithm's public interface is nicely isolated, and does not affect the concrete worker classes at all.
-
-2. What if GenericTableAlgorithm's extensible protocol changes (e.g., if additional defaulted arguments were added to Filter() or ProcessRow())? In the original version, all external clients of GenericTableAlgorithm would have to be recompiled even though the public interface is unchanged, because a derivation interface is visible in the class definition. In this version, any changes to GenericTableAlgorithm's extension protocol interface is nicely isolated, and does not affect external users at all.
-
-3. Any concrete worker classes can now be used within any other algorithm which can operate using the Filter()/ProcessRow() interface, not just GenericTableAlgorithm.
+   1. What if `GenericTableAlgorithm`'s common public interface changes (e.g., a new public member is added)? In the original version, all concrete worker classes would have to be recompiled because they are derived from `GenericTableAlgorithm`. In this version, any change to `GenericTableAlgorithm`'s public interface is nicely isolated, and does not affect the concrete worker classes at all.
+   
+   2. What if `GenericTableAlgorithm`'s extensible protocol changes (e.g., if additional defaulted arguments were added to `Filter()` or `ProcessRow()`)? In the original version, all external clients of `GenericTableAlgorithm` would have to be recompiled even though the public interface is unchanged, because a derivation interface is visible in the class definition. In this version, any changes to `GenericTableAlgorithm`'s extension protocol interface is nicely isolated, and does not affect external users at all.
+   
+   3. Any concrete worker classes can now be used within any other algorithm which can operate using the `Filter()/ProcessRow()` interface, not just `GenericTableAlgorithm`.
 
 In fact, what we've ended up with is very similar to the Strategy pattern.[1]
 
 Remember the computer science motto: Most any problem can be solved by adding a level of indirection. Of course, it's wise to temper this with Occam's Razor: Don't multiply entities more than necessary. A proper balance between the two in this case delivers much better reusability and maintainability, at little or no cost... a good deal by all accounts!
 
-You may have noticed that GenericTableAlgorithm could actually be a function instead of a class (in fact, some people might be tempted to rename Process() as operator()() since now the class apparently really is just a functor). The reason it could be replaced with a function is that the description doesn't say that it needs to keep state across calls to Process(). For example, if it does not need to keep state across invocations, we could replace it with:
+You may have noticed that GenericTableAlgorithm could actually be a function instead of a class (in fact, some people might be tempted to rename `Process()` as `operator()()` since now the class apparently really is just a functor). The reason it could be replaced with a function is that the description doesn't say that it needs to keep state across calls to `Process()`. For example, if it does not need to keep state across invocations, we could replace it with:
+
 ```  cpp
 bool GenericTableAlgorithm(const string& table, GTAClient& method) {
     // ... original contents of Process() go here ...
@@ -2301,27 +2304,31 @@ int main(int, char*[]) {
     GenericTableAlgorithm("Customer", MyWorker());
 }
 ```
+
 What we've really got here is a generic function, which can be given "specialized" behaviour as needed. If you know that 'method' objects never need to store state (that is, all instances are functionally equivalent and provide only the virtual functions), you can get fancy and make 'method' a non-class template parameter instead:
+
 ``` cpp
 template<typename GTACworker>
-bool GenericTableAlgorithm( const string& table ) {
+bool GenericTableAlgorithm(const string& table) {
     // ... original contents of Process() go here ...
 }
 
-int main( int, char*[] ) {
-    GenericTableAlgorithm<MyWorker>( "Customer" );
+int main(int, char*[]) {
+    GenericTableAlgorithm<MyWorker>("Customer");
 }
 ```
+
 I don't think that this buys you much here besides getting rid of a comma in the client code, so the first function is better. It's always good to resist the temptation to write cute code for its own sake.
 
 At any rate, whether to use a function or a class in a given situation can depend on what you're trying to achieve, but in this case writing a generic function may be a better solution.
 
  
 
-Notes
-1. E. Gamma et al., Design Patterns: Elements of Reusable Object-Oriented Software (Addison-Wesley, 1995).
+**Notes**
+1. E. Gamma et al., **Design Patterns: Elements of Reusable Object-Oriented Software** (Addison-Wesley, 1995).
 
-2. J. Lakos. Large-Scale C++ Software Design (Addison-Wesley, 1996).
+2. J. Lakos. **Large-Scale C++ Software Design** (Addison-Wesley, 1996).
+
 
 
 # 016 Maximally Reusable Generic Containers
