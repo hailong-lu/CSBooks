@@ -2003,27 +2003,26 @@ Perhaps Dorothy wasn't quite right... the following might be closer:
 
 
 # 013 OOP
-Difficulty: 4 / 10
+**Difficulty: 4 / 10**
 Is C++ an object-oriented language? It both is and is not, contrary to popular opinion.
 
 ----
 
-Problem
+**Problem**
 "C++ is a powerful language that provides many advanced object-oriented constructs, including encapsulation, exception handling, inheritance, templates, polymorphism, strong typing, and a complete module system."
 
 Discuss.
 
 ----
 
-Solution
+**Solution**
 The purpose of this GotW was to provoke discussion about major (and even missing) features in C++, to provide a healthy dose of reality. Specifically, I hoped that the resulting discussion would illustrate three things, and I wasn't disappointed:
 
-1. Not everyone agrees on what what "OO" means. Most would agree that inheritance and polymorphism are "OO" concepts; some would include encapsulation; a few might include exception handling; perhaps no one would include templates. Still, there are differing opinions.
+**1.** Not everyone agrees on what what "`OO`" means. Most would agree that inheritance and polymorphism are "`OO`" concepts; some would include encapsulation; a few might include exception handling; perhaps no one would include templates. Still, there are differing opinions.
 
-2. C++ is a multiparadigm language, not an OO language. It supports many OO features, but it doesn't force programmers to use them. You can write completely non-OO programs in C++, and many people do.
+**2.** C++ is a multiparadigm language, not an `OO` language. It supports many `OO` features, but it doesn't force programmers to use them. You can write completely `non-OO` programs in C++, and many people do.
 
-3. No language is the be-all and end-all. Today, I'm using C++ as my primary programming language; tomorrow, I'll use whatever best suits what I'm doing then. C++ does not have a module system (complete or otherwise), it lacks other major features like garbage collection, and it has static typing but not necessarily "strong" typing. All languages have advantages and drawbacks. Just pick the right tool for the job, and avoid the temptation to become a nearsighted language zealot. :-)
-
+**3.** No language is the be-all and end-all. Today, I'm using C++ as my primary programming language; tomorrow, I'll use whatever best suits what I'm doing then. C++ does not have a module system (complete or otherwise), it lacks other major features like garbage collection, and it has static typing but not necessarily "strong" typing. All languages have advantages and drawbacks. Just pick the right tool for the job, and avoid the temptation to become a nearsighted language zealot. :-)
 
 
 
