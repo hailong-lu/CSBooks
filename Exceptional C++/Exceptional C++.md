@@ -2564,13 +2564,14 @@ Use member templates to good effect when creating your own classes and you'll li
 
 
 # 017 Casts
-Difficulty: 6 / 10
+**Difficulty: 6 / 10**
 How well do you know C++'s casts? Using them well can greatly improve the reliability of your code.
 
 ----
 
-Problem
+**Problem**
 The new-style casts in (Draft) Standard C++ offer more power and safety than the old-style C casts. How well do you know them? The rest of this problem uses the following classes and global variables:
+
 ``` cpp
 class  A             { /*...*/ };
 class  B : virtual A { /*...*/ };
@@ -2583,7 +2584,9 @@ const A& ra1 = a1;
 const A& ra2 = a2;
 char c;
 ```
-1. Which of the following new-style casts are NOT equivalent to a C cast?
+
+**1.** Which of the following new-style casts are NOT equivalent to a C cast?
+
 ``` cpp
 const_cast
 dynamic_cast
@@ -2591,7 +2594,8 @@ reinterpret_cast
 static_cast
 ```
 
-2. For each of the following C casts, write the equivalent new-style cast. Which are incorrect if not written as a new-style cast?
+**2.** For each of the following C casts, write the equivalent new-style cast. Which are incorrect if not written as a new-style cast?
+
 ``` cpp
 void f() {
     A* pa; B* pb; C* pc;
@@ -2602,7 +2606,9 @@ void f() {
     pc = (C*)&d1;
 }
 ```
-3. Critique each of the following C++ casts for style and correctness.
+
+**3.** Critique each of the following C++ casts for style and correctness.
+
 ``` cpp
 void g() {
     unsigned char* puc = static_cast<unsigned char*>(&c);
@@ -2634,8 +2640,9 @@ void g() {
 
 ----
 
-Solution
+**Solution**
 The new-style casts in (Draft) Standard C++ offer more power and safety than the old-style C casts. How well do you know them? The rest of this problem uses the following classes and global variables:
+
 ``` cpp
 class  A             { /*...*/ };
 class  B : virtual A { /*...*/ };
@@ -2648,92 +2655,125 @@ const A& ra1 = a1;
 const A& ra2 = a2;
 char c;
 ```
-1. Which of the following new-style casts are NOT equivalent to a C cast?
+
+**1.** Which of the following new-style casts are NOT equivalent to a C cast?
 
 Only dynamic_cast is not equivalent to some C cast. All other new-style casts have old-style equivalents.
 
-2. For each of the following C casts, write the equivalent new-style cast. Which are incorrect if not written as a new-style cast?
+**2.** For each of the following C casts, write the equivalent new-style cast. Which are incorrect if not written as a new-style cast?
+
 ``` cpp
 void f() {
     A* pa; B* pb; C* pc;
 
     pa = (A*)&ra1;
 ```
-Use const_cast: pa = const_cast<A*>(&ra1);
+
+Use const_cast: `pa = const_cast<A*>(&ra1);`
+
 ``` cpp
     pa = (A*)&a2;
 ```
-This cannot be expressed as a new-style cast. The closest candidate is const_cast, but since a2 is a const object the results are undefined.
+
+This cannot be expressed as a new-style cast. The closest candidate is `const_cast`, but since a2 is a const object the results are undefined.
+
 ``` cpp
     pb = (B*)&c1;
 ```
-Use reinterpret_cast: pb = reinterpret_cast<B*>(&c1);
+
+Use reinterpret_cast: `pb = reinterpret_cast<B*>(&c1);`
+
 ``` cpp
     pc = (C*)&d1;
 }
 ```
-The above cast is wrong in C. In C++, no cast is required: pc = &d1;
 
-3. Critique each of the following C++ casts for style and correctness.
+The above cast is wrong in C. In C++, no cast is required: `pc = &d1;`
 
-First, a general note: We don't know whether any of these classes have virtual functions, and all of the following dynamic_casts are errors if the classes involved do not have virtual functions. For the rest of this discussion, we will assume that the classes do all have virtual functions, making the dynamic_casts legal.
+**3.** Critique each of the following C++ casts for style and correctness.
+
+First, a general note: We don't know whether any of these classes have virtual functions, and all of the following dynamic_casts are errors if the classes involved do not have virtual functions. For the rest of this discussion, we will assume that the classes do all have virtual functions, making the `dynamic_casts` legal.
+
 ``` cpp
 void g() {
     unsigned char* puc = static_cast<unsigned char*>(&c);
     signed char* psc = static_cast<signed char*>(&c);
 ```
-Error: we must use reinterpret_cast for both. This might surprise you at first, but the reason is that char, signed char, and unsigned char are three distinct types. Even though there are implicit conversions between them, they are unrelated, and so pointers to them are unrelated.
+
+Error: we must use `reinterpret_cast` for both. This might surprise you at first, but the reason is that char, signed char, and unsigned char are three distinct types. Even though there are implicit conversions between them, they are unrelated, and so pointers to them are unrelated.
+
 ``` cpp
     void* pv = static_cast<void*>(&b1);
     B* pb1 = static_cast<B*>(pv);
 ```
-These are both fine, but the first is unnecessary since there is already an implicit conversion from an object pointer to a void*.
+
+These are both fine, but the first is unnecessary since there is already an implicit conversion from an object pointer to a `void*`.
+
 ``` cpp
     B* pb2 = static_cast<B*>(&b1);
 ```
-This is fine, but unnecessary since the argument is already a B*.
+
+This is fine, but unnecessary since the argument is already a `B*`.
+
 ``` cpp
     A* pa1 = const_cast<A*>(&ra1);
 ```
-This is legal, but casting away const is usually indicative of poor style. Most of the cases where you legitimately would want to remove the const-ness of a pointer or reference are related to class members and covered by the 'mutable' keyword. See GotW #6 for more discussion about const-correctness.
+
+This is legal, but casting away const is usually indicative of poor style. Most of the cases where you legitimately would want to remove the const-ness of a pointer or reference are related to class members and covered by the '`mutable`' keyword. See GotW #6 for more discussion about const-correctness.
+
 ``` cpp
     A* pa2 = const_cast<A*>(&ra2);
 ```
-Error: this will produce undefined behaviour if the pointer is used to write on the object, since a2 really is a const object. To see why, consider that a compiler is allowed to see that a2 is created as a const object and use that information to store it in read-only memory as an optimization. Casting away const on such an object is obviously dangerous.
 
-Note: I showed no examples of using const_cast to convert a non-const pointer to a const pointer. The reason is that it's redundant; it is already legal to assign a non-const pointer to a const pointer. We only need const_cast to do the reverse.
+Error: this will produce undefined behaviour if the pointer is used to write on the object, since `a2` really is a const object. To see why, consider that a compiler is allowed to see that `a2` is created as a const object and use that information to store it in read-only memory as an optimization. Casting away const on such an object is obviously dangerous.
+
+Note: I showed no examples of using `const_cast` to convert a non-const pointer to a const pointer. The reason is that it's redundant; it is already legal to assign a non-const pointer to a const pointer. We only need `const_cast` to do the reverse.
+
 ``` cpp
     B* pb3 = dynamic_cast<B*>(&c1);
 ```
+
 Error (if you try to use pb3): since c1 IS-NOT-A B (because C is not publicly derived from B, in fact it is not derived from B at all), this will set pb3 to null. The only legal cast would be a reinterpret_cast, and using that is almost always evil.
+
 ``` cpp
     A* pa3 = dynamic_cast<A*>(&b1);
 ```
+
 Error: since b1 IS-NOT-A A (because B is not publicly derived from A, but its derivation is private), this is illegal.
+
 ``` cpp
     B* pb4 = static_cast<B*>(&d1);
 ```
+
 This is fine, but not necessary since derived-to-base pointer conversions can be done implicitly.
+
 ``` cpp
     D* pd = static_cast<D*>(pb4);
 ```
-This is fine, which may surprise you if you expected this to require a dynamic_cast. The reason is that downcasts can be static when the target is known, but beware: you are telling the compiler that you know for a fact that what is being pointed to really is of that type. If you are wrong, then the cast cannot inform you of the problem (as could dynamic_cast, which would return a null pointer if the cast failed) and at best you will get spurious runtime errors and/or program crashes.
+
+This is fine, which may surprise you if you expected this to require a `dynamic_cast`. The reason is that downcasts can be static when the target is known, but beware: you are telling the compiler that you know for a fact that what is being pointed to really is of that type. If you are wrong, then the cast cannot inform you of the problem (as could `dynamic_cast`, which would return a null pointer if the cast failed) and at best you will get spurious runtime errors and/or program crashes.
+
 ``` cpp
     pa1 = dynamic_cast<A*>(pb2);
     pa1 = dynamic_cast<A*>(pb4);
 ```
-These two look very similar. Both attempt to use dynamic_cast to convert a B* into an A*. However, the first is an error while the second is not.
 
-Here's the reason: as noted above, you cannot use dynamic_cast to cast a pointer to what really is a B object (and here pb2 points to the object b1) into an A object, since B inherits privately, not publicly, from A. However, the second cast succeeds because pb4 points to the object d1, and D does have A as an indirect public base class (through C), and dynamic_cast is able to cast across the inheritance hierarchy using the path B* -> D* -> C* -> A*.
+These two look very similar. Both attempt to use `dynamic_cast` to convert a `B*` into an `A*`. However, the first is an error while the second is not.
+
+Here's the reason: as noted above, you cannot use `dynamic_cast` to cast a pointer to what really is a B object (and here pb2 points to the object b1) into an A object, since B inherits privately, not publicly, from A. However, the second cast succeeds because pb4 points to the object d1, and D does have A as an indirect public base class (through C), and `dynamic_cast` is able to cast across the inheritance hierarchy using the path `B*` -> `D*` -> `C*` -> `A*`.
+
 ``` cpp
     C* pc1 = dynamic_cast<C*>(pb4);
 ```
-This too is fine, for the same reason as the last: dynamic_cast can navigate the inheritance hierarchy and perform cross-casts, and so this is legal and will succeed.
+
+This too is fine, for the same reason as the last: `dynamic_cast` can navigate the inheritance hierarchy and perform cross-casts, and so this is legal and will succeed.
+
 ``` cpp
     C& rc1 = dynamic_cast<C&>(*pb2);
 }
 ```
-Finally, this isn't fine... since *pb2 isn't really a C, dynamic_cast will throw a bad_cast exception to signal failure. Why? Well, dynamic_cast can and does return null if a pointer cast fails, but since there's no such thing as a null reference it can't return a null reference if a reference cast fails. There's no way to signal such a failure to the client code besides throwing an exception, so that's what the standard bad_cast exception class is for.
+
+Finally, this isn't fine... since `*pb2` isn't really a C, `dynamic_cast` will throw a bad_cast exception to signal failure. Why? Well, `dynamic_cast` can and does return null if a pointer cast fails, but since there's no such thing as a null reference it can't return a null reference if a reference cast fails. There's no way to signal such a failure to the client code besides throwing an exception, so that's what the standard `bad_cast` exception class is for.
 
 
 
