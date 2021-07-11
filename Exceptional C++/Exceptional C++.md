@@ -2778,15 +2778,16 @@ Finally, this isn't fine... since `*pb2` isn't really a C, `dynamic_cast` will t
 
 
 # 018 Iterators
-Difficulty: 7 / 10
+**Difficulty: 7 / 10**
 Every programmer who uses the standard library has to be aware of these common and not-so-common iterator mistakes. How many of them can you find?
 
 ----
 
-Problem
+**Problem**
 The following program has at least four iterator-related problems. How many can you find?
+
 ``` cpp
-int main( int, char*[] ) {
+int main(int, char*[]) {
     vector<Date> e;
     copy(istream_iterator<Date>(cin), istream_iterator<Date>(), back_inserter(e));
     
@@ -2802,66 +2803,82 @@ int main( int, char*[] ) {
     copy(first, last, ostream_iterator<Date>( cout, "\n" ));
 }
 ```
+
 ----
 
-Solution
+**Solution**
 The following program has at least four iterator-related problems. How many can you find?
+
 ``` cpp
-int main( int, char*[] ) {
+int main(int, char*[]) {
     vector<Date> e;
-    copy( istream_iterator<Date>( cin ), istream_iterator<Date>(), back_inserter( e ) );
+    copy(istream_iterator<Date>(cin), 
+         istream_iterator<Date>(), 
+         back_inserter(e));
 ```
-This is fine so far. The Date class writer provided an extractor function with the signature operator>>( istream&, Date& ), which is what istream_iterator<Date> uses to read the Dates from the cin stream. The copy algorithm just stuffs the Dates into the vector.
+This is fine so far. The Date class writer provided an extractor function with the signature `operator>>(istream&, Date&)`, which is what `istream_iterator<Date>` uses to read the Dates from the cin stream. The copy algorithm just stuffs the Dates into the vector.
+
 ``` cpp
-    vector<Date>::iterator first = find( e.begin(), e.end(), "01/01/95" );
-    vector<Date>::iterator last = find( e.begin(), e.end(), "12/31/95" );
+    vector<Date>::iterator first = find(e.begin(), e.end(), "01/01/95");
+    vector<Date>::iterator last = find(e.begin(), e.end(), "12/31/95");
 
     *last = "12/30/95";
 ```
-Error: This may be illegal, because 'last' may be e.end() and therefore not a dereferenceable iterator.
 
-The find algorithm retuns its second argument (the end iterator of the range) if the value is not found. In this case, if "12/31/95" is not in e, then 'last' is equal to e.end() which points to one-past-the-end of the container and is not a valid iterator.
+Error: This may be illegal, because '`last`' may be `e.end()` and therefore not a dereferenceable iterator.
+
+The find algorithm retuns its second argument (the end iterator of the range) if the value is not found. In this case, if "12/31/95" is not in e, then '`last`' is equal to `e.end()` which points to one-past-the-end of the container and is not a valid iterator.
+
 ``` cpp
-    copy( first, last, ostream_iterator<Date>( cout, "\n" ) );
+    copy( first, last, ostream_iterator<Date>(cout, "\n"));
 ```
-Error: This may be illegal, because 'first' may actually be after 'last'.
 
-If "01/01/95" is not found in e but "12/31/95" is, then the iterator 'last' will point to something earlier in the collection (the Date object equal to "12/31/95") than does the iterator 'first' (one past the end). However, copy requires that 'first' must point to an earlier place in the same collection as 'last'... that is, \[first, last) must be a valid range.
+Error: This may be illegal, because '`first`' may actually be after '`last`'.
+
+If "01/01/95" is not found in e but "12/31/95" is, then the iterator '`last`' will point to something earlier in the collection (the Date object equal to "12/31/95") than does the iterator '`first`' (one past the end). However, copy requires that '`first`' must point to an earlier place in the same collection as '`last`'... that is, `\[first, last)` must be a valid range.
 
 Unless you're using a checked version of the standard library, the likely symptom if this happens will be a difficult-to-diagnose core dump during or sometime after the copy.
-``` cpp
-    e.insert( --e.end(), TodaysDate() ); 
-```
-Error: The expression "--e.end()" is illegal.
 
-The reason is simple, if a little obscure: vector<Date>::iterator is simply a Date*, and you're not allowed to modify temporaries of builtin type. For example, the following plain-jane code is also illegal:
+``` cpp
+    e.insert(--e.end(), TodaysDate()); 
+```
+
+Error: The expression "`--e.end()`" is illegal.
+
+The reason is simple, if a little obscure: `vector<Date>::iterator` is simply a `Date*`, and you're not allowed to modify temporaries of builtin type. For example, the following plain-jane code is also illegal:
+
 ``` cpp
     Date* f();    // function that returns a Date*
     p = --f();    // error, but could be "f() - 1"
 ```
+
 Fortunately, there's no loss of efficiency in writing this (more) correctly as:
+
 ``` cpp
-    e.insert( e.end() - 1, TodaysDate() ); 
+    e.insert(e.end() - 1, TodaysDate()); 
 ```
-Error: Now you still have the other error... if e is empty, e.end() - 1 will not be a valid iterator.
+
+Error: Now you still have the other error... if e is empty, `e.end() - 1` will not be a valid iterator.
+
 ``` cpp
-    copy( first, last, ostream_iterator<Date>( cout, "\n" ) ); 
+    copy(first, last, ostream_iterator<Date>(cout, "\n")); 
 }
 ```
-Error: 'first' and 'last' may not be valid iterators any more.
 
-A vector grows in "chunks" so that it won't have to reallocate its buffer every time you insert something into it. However, sometimes the vector will be full, and adding something will trigger a reallocation. Here, as a result of the insert operation, the vector may or may not grow. If it does, it will invalidate our existing iterators and the buggy copy will again generally manifest as a difficult-to-diagnose core dump.
+Error: '`first`' and '`last`' may not be valid iterators any more.
+
+A vector grows in "`chunks`" so that it won't have to reallocate its buffer every time you insert something into it. However, sometimes the vector will be full, and adding something will trigger a reallocation. Here, as a result of the insert operation, the vector may or may not grow. If it does, it will invalidate our existing iterators and the buggy copy will again generally manifest as a difficult-to-diagnose core dump.
 
 Summary
 When using iterators, be aware of four main issues:
-
-1. Valid values: Is the iterator dereferenceable? For example, writing "*e.end()" is always a logical error.
-
-2. Valid lifetimes: Is the iterator still valid when it's being used? Or has it been invalidated by some operation since we obtained it?
-
-3. Valid ranges: Is a pair of iterators a valid range? Is 'first' really before (or equal to) 'last'? Do both really point into the same container?
-
-4. Illegal builtin manipulation. For example, modifying a temporary of builtin type as in "--e.end()" above (fortunately, the compiler will catch this for you, and for iterators of class type the library author will often choose to allow this sort of thing for syntactic convenience).
+   
+   1. Valid values: Is the iterator dereferenceable? For example, writing "`*e.end()`" is always a logical error.
+   
+   2. Valid lifetimes: Is the iterator still valid when it's being used? Or has it been invalidated by some operation since we obtained it?
+   
+   3. Valid ranges: Is a pair of iterators a valid range? Is '`first`' really before (or equal to) '`last`'? Do both really point into the same container?
+   
+   4. Illegal builtin manipulation. For example, modifying a temporary of builtin type as in "`--e.end()`" above (fortunately, the compiler will catch this for you, and for iterators of class type the library author will often choose to allow this sort of thing for syntactic convenience).
 
 
 
