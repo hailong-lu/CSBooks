@@ -2332,13 +2332,14 @@ At any rate, whether to use a function or a class in a given situation can depen
 
 
 # 016 Maximally Reusable Generic Containers
-Difficulty: 8 / 10
+**Difficulty: 8 / 10**
 How flexible can you make this simple container class? Hint: You'll learn more than a little about member templates along the way.
 
 ----
 
-Problem
+**Problem**
 Implement copy construction and copy assignment for the following fixed-length vector class to provide maximum usability. Hint: Think about the kinds of things that client code might want to do.
+
 ```  cpp
 template<typename T, size_t size>
 class fixed_vector {
@@ -2355,21 +2356,23 @@ private:
     T v_[size];
 };
 ```
-Notes
-- Don't fix other things. This container is not intended to be fully STL-compliant, and has at least one subtle problem. It's only meant to illustrate some important issues in a simplified setting.
 
-- This example is adapted from one presented by Kevlin Henney and later analyzed by Jon Jagger in Issues 12 and 20 of the British C++ user magazine Overload. (British readers beware: The answer to this GotW goes well beyond that presented in Overload #20. In fact, the efficiency optimization presented there won't work in the solution that I'm going to post.)
+**Notes**
+   - Don't fix other things. This container is not intended to be fully STL-compliant, and has at least one subtle problem. It's only meant to illustrate some important issues in a simplified setting.
+
+   - This example is adapted from one presented by Kevlin Henney and later analyzed by Jon Jagger in Issues 12 and 20 of the British C++ user magazine Overload. (British readers beware: The answer to this GotW goes well beyond that presented in Overload #20. In fact, the efficiency optimization presented there won't work in the solution that I'm going to post.)
 
 ----
 
-Solution
-[Note: This original solution contains some bugs since fixed in Exceptional C++ and the Errata list.]
+**Solution**
+**\[Note: This original solution contains some bugs since fixed in [Exceptional C++](http://www.gotw.ca/publications/xc++.htm) and the [Errata list](http://www.gotw.ca/publications/xc++-errata.htm).]**
 
 Implement copy construction and copy assignment for the following fixed-length vector class to provide maximum usability. Hint: Think about the kinds of things that client code might want to do.
 
 For this GotW solution, we'll do something a little different: I'll present the solution code, and your mission is to supply the explanation.
 
 Q: What is the following solution doing, and why? Explain each constructor and operator.
+
 ```  cpp
 template<typename T, size_t size>
 class fixed_vector {
@@ -2400,14 +2403,16 @@ private:
     T v_[size];
 };
 ```
+
 Let's analyze this and see how well it measures up to what the question asked.
 
-Copy Construction and Copy Assignment
+**Copy Construction and Copy Assignment**
 First, note that the question as stated is a bit of a red herring: the original code already had a copy constructor and a copy assignment operator that worked fine. Our solution proposes to add a templated constructor and a templated assignment operator to make construction and assignment more flexible.
 
 Congratulations to Valentin Bonnard and others who were quick to point out that the proposed copy constructor is not a copy constructor at all! In fact, we can go further: the proposed copy assignment operator is not a copy assignment operator at all, either.
 
-Here's why: A copy constructor or copy assignment operator specifically constructs/assigns from another object of exactly the same type... including the same template arguments, if the class is templated. For example:
+Here's why: A copy constructor or copy assignment operator specifically `constructs/assigns` from another object of exactly the same type... including the same template arguments, if the class is templated. For example:
+
 ``` cpp
 struct X {
     template<typename T>
@@ -2417,6 +2422,7 @@ struct X {
     operator=( const T& );   // NOT copy ass't, T can't be X
 };
 ```
+
 "But," you say, "those two templated member functions could exactly match the signatures of copy construction and copy assignment!" Well, actually, no... they couldn't, because in both cases T may not be X. To quote from CD2 [note: also appears in the later official standard of 1998; "CD2" was "Comittee Draft 2" as of 1995]:
 
 [12.8/2 note 4]
@@ -2424,6 +2430,7 @@ struct X {
 Because a template constructor is never a copy constructor, the presence of such a template does not suppress the implicit declaration of a copy constructor.
 
 There's similar wording in [12.8/9 note 7] for copy assignment. So the proposed solution in fact still has the same copy constructor and copy assignment operator as the original code did, because the compiler still generates the implicit versions. What we've done is extended the construction and assignment flexibility, not replaced the old versions. For example, consider the following program:
+
 ``` cpp
     fixed_vector<char,4> v;
     fixed_vector<int,4>  w;
@@ -2434,14 +2441,16 @@ There's similar wording in [12.8/9 note 7] for copy assignment. So the proposed 
     w = w2; // calls implicit assignment operator
     w = v;  // calls templated assignment operator
 ```
+
 So what the question was really looking for was for us to provide flexible "construction and assignment from other fixed_vectors," not specifically flexible "copy construction and copy assignment" which already existed.
 
-Usability Issues for Construction and Assignment
+**Usability Issues for Construction and Assignment**
 There are two major usability considerations:
 
 1. Support varying types (including inheritance).
 
 While fixed_vector definitely is and should remain a homogeneous container, sometimes it makes sense to construct or assign from another fixed_vector which actually contains different objects. As long as the source objects are assignable to our type of object, this should be allowed. For example, clients may want to write something like this:
+
 ``` cpp
     fixed_vector<char,4> v;
     fixed_vector<int,4>  w(v);  // copy
@@ -2454,9 +2463,11 @@ While fixed_vector definitely is and should remain a homogeneous container, some
     fixed_vector<B,4> y(x);     // copy
     y = x;                      // assignment
 ```
+
 2. Support varying sizes.
 
 Similarly, clients may want to construct or assign from fixed_vectors with different sizes. Again, it makes sense to support this feature. For example:
+
 ``` cpp
     fixed_vector<char,6> v;
     fixed_vector<int,4>  w(v);  // copy 4 objects
@@ -2469,31 +2480,39 @@ Similarly, clients may want to construct or assign from fixed_vectors with diffe
     fixed_vector<B,42> y(x);    // copy 16 objects
     y = x;                      // assign 16 objects
 ```
-Alternative: The Standard Library Approach
+
+**Alternative: The Standard Library Approach**
 I happen to like the syntax and usability of the above functions, but there are still some nifty things they won't let you do. Consider another approach that follows the style of the standard library:
 
 1. Copying.
+
 ``` cpp
 template<Iter>
 fixed_vector( Iter first, Iter last ) {
   copy(first, first+min(size,last-first), begin());
 }
 ```
+
 Now when copying, instead of writing:
+
 ``` cpp
     fixed_vector<char,6> v;
     fixed_vector<int,4>  w(v);  // copy 4 objects
 ```
+
 we need to write:
+
 ``` cpp
     fixed_vector<char,6> v;
     fixed_vector<int,4>  w(v.begin(), v.end());    // copy 4 objects
 ```
+
 For construction, which style is better: the style of our proposed solution, or this standard library-like style? Here the former is somewhat easier to use and the latter is much more flexible (e.g., it allows users to choose subranges and copy from other kinds of containers), so you can take your pick or simply supply both flavours.
 
 2. Assignment.
 
-Note that we can't templatize assignment to take an iterator range, since operator=() may take only one parameter. Instead, we can provide a named function:
+Note that we can't templatize assignment to take an iterator range, since `operator=()` may take only one parameter. Instead, we can provide a named function:
+
 ``` cpp
 template<Iter>
 fixed_vector<T,size>& assign(Iter first, Iter last) {
@@ -2501,32 +2520,43 @@ fixed_vector<T,size>& assign(Iter first, Iter last) {
     return *this;
 }
 ```
+
 Now when assigning, instead of writing:
+
 ``` cpp
     w = v;                      // assign 4 objects
 ```
+
 we need to write:
+
 ``` cpp
     w.assign(v.begin(), v.end());   // assign 4 objects
 ```
+
 Technically, assign() isn't even necessary since we could still get the same flexibility without it, but that would be uglier and less efficient:
+
 ``` cpp
     w = fixed_vector<int,4>(v.begin(), v.end());   // assign 4 objects
 ```
+
 For assignment, which style is better: the style of our proposed solution, or this standard library-like style? This time the flexibility argument doesn't hold water because the user can just as easily (and even more flexibly) write the copy himself. Instead of writing:
+
 ``` cpp
     w.assign(v.begin(), v.end());
 ```
-the user just writes:
-``` cpp
-    copy( v.begin(), v.end(), w.begin() );
-```
-There's little reason to write assign() in this case, so for assignment it's probably best to use the technique from the proposed solution and let clients use copy() directly whenever subrange assignment is desired.
 
-Why Write the Default Constructor?
+the user just writes:
+
+``` cpp
+    copy v.begin(), v.end(), w.begin());
+```
+
+There's little reason to write `assign()` in this case, so for assignment it's probably best to use the technique from the proposed solution and let clients use `copy()` directly whenever subrange assignment is desired.
+
+**Why Write the Default Constructor?**
 Finally, why does the proposed solution also write an empty default constructor, which merely does the same thing as the compiler-generated default constructor? This is necessary because as soon as you define a constructor of any kind the compiler will not generate the default one for you, and clearly client code like the above requires it.
 
-Summary: What About Member Function Templates?
+**Summary: What About Member Function Templates?**
 Hopefully this GotW has convinced you that member function templates are definitely handy. I hope that it's also helped to show why they're widely used in the standard library. If you're not familiar with them already, don't despair... not all compilers support member templates today, but it's in the standard and so soon all compilers will. (As of this writing, Microsoft Visual C++ 5.0 can compile the solution, but it can't deduce the osize parameters in some of the example client code.)
 
 Use member templates to good effect when creating your own classes and you'll likely not just have happy users, but have more of them, as they flock to reusing the code that's best-designed for reuse.
