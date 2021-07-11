@@ -902,7 +902,7 @@ First, consider the #includes that can be immediately removed. Here is the origi
 
 ``` cpp
 // gotw007.h (implementation file is gotw007.cpp)
-//
+
 #include "a.h"  // class A
 #include "b.h"  // class B
 #include "c.h"  // class C
@@ -980,9 +980,9 @@ Excerpted from the GotW coding standards:
 Putting it all together, we get much cleaner headers:
 
 ``` cpp
-//---------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // new file x.h: only TWO includes!
-//
+
 #include "a.h"  // class A
 #include <iosfwd>
 
@@ -1007,9 +1007,9 @@ inline std::ostream& operator<<(std::ostream& os, const X& x){
 // NOTE: this does NOT require ostream's definition!
 
 
-//---------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // new file y.h: ZERO includes!
-//
+
 class A;
 class C;
 
@@ -1021,29 +1021,27 @@ private:
 };
 
 
-//---------------------------------------------------------------
-// gotw007.h is now just a compatibility stub with two lines, and
-// pulls in only TWO extra secondary includes (through x.h)
-//
+//-----------------------------------------------------------------------------
+// gotw007.h is now just a compatibility stub with two lines, and pulls in only
+// TWO extra secondary includes (through x.h)
+
 #include "x.h"
 #include "y.h"
 
 
-//---------------------------------------------------------------
-// new structures in gotw007.cpp... note that the impl objects
-// will be new'd by the X/Y ctors and delete'd by the X/Y dtors
-// and X/Y member functions will access the data through their
-// pimpl_ pointers
-//
-struct XImpl    // yes, this can be called "struct" even
-{               // though the forward-decl says "class"
+//-----------------------------------------------------------------------------
+// new structures in gotw007.cpp... note that the impl objects will be new'd
+// by the X/Y ctors and delete'd by the X/Y dtors and X/Y member functions will
+// access the data through their pimpl_ pointers
+
+struct XImpl {
+    // yes, this can be called "struct" even though the forward-decl says "class"
     std::string  name_;
     std::list<C> clist_;
     D            d_;
 }
 
-struct YImpl
-{
+struct YImpl {
     std::list<std::wostringstream*> alist_;
     B b_;
 }
@@ -1074,15 +1072,13 @@ public:
 
     unsigned Count();   // returns # of T's in the stack
     void     Push(const T&);
-    T        Pop();     // if empty, returns default-
-                        // constructed T
+    T        Pop();     // if empty, returns default-constructed T
 
 private:
-    T*       v_;        // pointer to a memory area big
-                        //  enough for 'vsize_' T objects
+    T*       v_;        // pointer to a memory area big enough for 
+                        // 'vsize_' T objects
     unsigned vsize_;    // the size of the 'v_' area
-    unsigned vused_;    // the number of T's actually
-                        //  used in the 'v_' area
+    unsigned vused_;    // the number of T's actually used in the 'v_' area
 };
 ```
 
@@ -1109,11 +1105,9 @@ Stack<T>::Stack()
 }
 
 template<class T>
-T Stack<T>::Pop()
-{
+T Stack<T>::Pop() {
     T result; // if empty, return default-constructed T
-    if(vused_ > 0)
-    {
+    if(vused_ > 0)     {
         result = v_[--vused_];
     }
     return result;
@@ -1123,7 +1117,7 @@ T Stack<T>::Pop()
 ----
 
 **Solution**
-[The solution did turn out to be entirely correct. For an updated and greatly enhanced version of this material, see my [September and November/December 1997 C++ Report articles](http://www.awlonline.com/cseng/meyerscddemo/DEMO/MAGAZINE/SU_FRAME.HTM), and further final updates in the book Exceptional C++.]
+\[The solution did turn out to be entirely correct. For an updated and greatly enhanced version of this material, see my [September and November/December 1997 C++ Report articles](http://www.awlonline.com/cseng/meyerscddemo/DEMO/MAGAZINE/SU_FRAME.HTM), and further final updates in the book Exceptional C++.]
 
 IMPORTANT NOTE: I do not claim that this solution actually meets my original requirements. In fact, I don't have a compiler than can compile it! While I've addressed as many of the interactions as I can think of, a major point of this exercise was to demonstrate that writing exception-safe code requires care.
 
@@ -1134,10 +1128,8 @@ Last note: To keep this solution simpler, I've decided not to demonstrate the ba
 To recap, here's the required interface:
 
 ``` cpp
-template <class T>
-    // T must have default ctor and copy assignment
-class Stack
-{
+template <class T>  // T must have default ctor and copy assignment
+class Stack {
 public:
     Stack();
     ~Stack();
@@ -1146,22 +1138,20 @@ public:
 
     unsigned Count();   // returns # of T's in the stack
     void     Push(const T&);
-    T        Pop();     // if empty, returns default-
-                        // constructed T
+    T        Pop();     // if empty, returns default-constructed T
 
 private:
-    T*       v_;        // pointer to a memory area big
-                        //  enough for 'vsize_' T objects
+    T*       v_;        // pointer to a memory area big enough for 
+                        // 'vsize_' T objects
     unsigned vsize_;    // the size of the 'v_' area
-    unsigned vused_;    // the number of T's actually
-                        //  used in the 'v_' area
+    unsigned vused_;    // the number of T's actually used in the 'v_' area
 };
 ```
 
 Now for the implementations. One requirement we will place on T is T dtors must not throw. If dtors may throw, many operations are difficult or impossible to implement safely.
 
 ``` cpp
-//----- DEFAULT CTOR ----------------------------------------------
+//----- DEFAULT CTOR ----------------------------------------------------------
 template<class T>
 Stack<T>::Stack()
   : v_(new T[10]),  // default allocation
@@ -1171,7 +1161,7 @@ Stack<T>::Stack()
     // if we got here, the construction was okay
 }
 
-//----- COPY CTOR -------------------------------------------------
+//----- COPY CTOR -------------------------------------------------------------
 template<class T>
 Stack<T>::Stack(const Stack<T>& other)
   : v_(0),      // nothing allocated or used yet
@@ -1182,18 +1172,16 @@ Stack<T>::Stack(const Stack<T>& other)
     // if we got here, the copy construction was okay
 }
 
-//----- COPY ASSIGNMENT -------------------------------------------
+//----- COPY ASSIGNMENT -------------------------------------------------------
 template<class T>
-Stack<T>& Stack<T>::operator=(const Stack<T>& other) 
-{
-    if(this != &other) 
-	{
+Stack<T>& Stack<T>::operator=(const Stack<T>& other) {
+    if(this != &other) {
         T* v_new = NewCopy(other.v_, other.vsize_, other.vsize_);
         // if we got here, the allocation and copy were okay
 
         delete[] v_;
-        // note that this cannot throw, since T dtors cannot
-        // throw and ::operator delete[] is declared as throw()
+        // note that this cannot throw, since T dtors cannot throw and
+        // ::operator delete[] is declared as throw()
     
         v_ = v_new;
         vsize_ = other.vsize_;
@@ -1203,25 +1191,22 @@ Stack<T>& Stack<T>::operator=(const Stack<T>& other)
     return *this;   // safe, no copy involved
 }
 
-//----- DTOR ------------------------------------------------------
+//----- DTOR ------------------------------------------------------------------
 template<class T>
-Stack<T>::~Stack() 
-{
+Stack<T>::~Stack() {
     delete[] v_;    // again, this can't throw
 }
 
-//----- COUNT -----------------------------------------------------
+//----- COUNT -----------------------------------------------------------------
 template<class T>
-unsigned Stack<T>::Count() 
-{
+unsigned Stack<T>::Count() {
     return vused_;  // it's just a builtin, nothing can go wrong
 }
 
-//----- PUSH ------------------------------------------------------
+//----- PUSH ------------------------------------------------------------------
 template<class T>
 void Stack<T>::Push(const T& t) {
-    if(vused_ == vsize_)  // grow if necessary
-    {
+    if(vused_ == vsize_) {  // grow if necessary
         unsigned vsize_new = (vsize_+1)*2; // grow factor
         T* v_new = NewCopy(v_, vsize_, vsize_new);
         // if we got here, the allocation and copy were okay
@@ -1231,78 +1216,67 @@ void Stack<T>::Push(const T& t) {
         vsize_ = vsize_new;
     }
     
-    v_[vused_] = t; // if this copy throws, the increment
-    ++vused_;       //  isn't done and the state is unchanged
+    v_[vused_] = t; // if this copy throws, the increment isn't done and the 
+    ++vused_;       // state is unchanged
 }
 
-//----- POP -------------------------------------------------------
+//----- POP -------------------------------------------------------------------
 template<class T>
-T Stack<T>::Pop()
-{
+T Stack<T>::Pop() {
     T result;
-    if(vused_ > 0)
-    {
-        result = v_[vused_-1];  // if this copy throws, the
-        --vused_;               //  decrement isn't done and
-    }                           //  the state is unchanged
+    if(vused_ > 0) {
+        result = v_[vused_-1];  // if this copy throws, the decrement isn't 
+        --vused_;               // done and the state is unchanged
+    } 
     return result;
 }
 
 //
-// NOTE: As alert reader Wil Evers was the first to point out,
-//  "As defined in the challenge, Pop() forces its users to write
-//  exception-unsafe code, which first causes a side effect
-//  (popping an element off the stack) and then lets an exception
-//  escape (copying the return value into [the caller's
-//  destination object])."
-//
-// This points out that one reason writing exception-safe
-// code is so hard is that it affects not only your
-// implementations, but also your interfaces!  Some
-// interfaces, like this one, can't be implemented in a
-// fully exception-safe manner.
-//
-// One way to correct this one is to respecify the function as
-// "void Stack<T>::Pop( T& result)".  This way we can know
-// the copy to the result has actually succeeded before we
-// change the state of the stack.  For example, here's an
-// alternative version of Pop() that's more exception-safe:
-//
+// NOTE: As alert reader Wil Evers was the first to point out, "As defined in 
+// the challenge, Pop() forces its users to write exception-unsafe code, which
+// first causes a side effect (popping an element off the stack) and then lets
+// an exception escape (copying the return value into 
+// [the caller's destination object])."
+
+// This points out that one reason writing exception-safe code is so hard is 
+// that it affects not only your implementations, but also your interfaces!  
+// Some interfaces, like this one, can't be implemented in a fully 
+// exception-safe manner.
+
+// One way to correct this one is to respecify the function as 
+// "void Stack<T>::Pop( T& result)".  This way we can know the copy to the 
+// result has actually succeeded before we change the state of the stack.  
+// For example, here's analternative version of Pop() that's more exception-safe:
+
 template<class T>
-void Stack<T>::Pop(T& result)
-{
-    if(vused_ > 0)
-    {
-        result = v_[vused_-1];  // if this copy throws, the
-        --vused_;               //  decrement isn't done and
-    }                           //  the state is unchanged
+void Stack<T>::Pop(T& result) {
+    if(vused_ > 0) {
+        result = v_[vused_-1];  // if this copy throws, the decrement isn't 
+        --vused_;               // done and the state is unchanged
+    }
 }
-//
-// Alternatively, we may let Pop() return void and provide a
-// Front() member function to access the topmost object.
-//
+
+// Alternatively, we may let Pop() return void and provide a Front() member
+// function to access the topmost object.
 
 
-//----- HELPER FUNCTION -------------------------------------------
-// When we want to make a (possibly larger) copy of a T buffer,
-//  this function will allocate the new buffer and copy over the
-//  original elements.  If any exceptions are encountered, the
-//  function releases all temporary resources and propagates
-//  the exception so that nothing is leaked.
-//
+
+//----- HELPER FUNCTION -------------------------------------------------------
+// When we want to make a (possibly larger) copy of a T buffer, this function 
+// will allocate the new buffer and copy over the original elements.  If any 
+// exceptions are encountered, the function releases all temporary resources 
+// and propagates the exception so that nothing is leaked.
+
 template<class T>
-T* NewCopy(const T* src, unsigned srcsize, unsigned destsize)
-{
+T* NewCopy(const T* src, unsigned srcsize, unsigned destsize) {
     destsize = max(srcsize, destsize); // basic parm check
     T* dest = new T[destsize];
     // if we got here, the allocation/ctors were okay
 
-    try
-    {
+    try {
         copy(src, src+srcsize, dest);
     }
-    catch(...)
-    {
+    catch(...) {
         delete[] dest;
         throw;  // rethrow the original exception
     }
@@ -1333,12 +1307,10 @@ With many current compilers, using "`try`" and "`catch`" often adds unnecessary 
 Yes, because we only care about catching "`...`". In general, code of the form
 
 ``` cpp
-    try 
-	{ 
+    try { 
 	    TryCode(); 
 	} 
-	catch(...) 
-	{ 
+	catch(...) { 
 	    CatchCode(parms); throw; 
 	}
 ```
@@ -1363,8 +1335,7 @@ Our solution uses `try/catch` only in the NewCopy function, so let's illustrate 
 
 ``` cpp
 template<class T>
-T* NewCopy(const T* src, unsigned srcsize, unsigned destsize)
-{
+T* NewCopy(const T* src, unsigned srcsize, unsigned destsize) {
     destsize = max(srcsize, destsize); // basic parm check
 
     struct Janitor {
@@ -1378,8 +1349,8 @@ T* NewCopy(const T* src, unsigned srcsize, unsigned destsize)
     
     Janitor j(dest);
     copy(src, src+srcsize, dest);
-    // if we got here, the copy was okay... otherwise, j
-    // was destroyed during stack unwinding and will handle
+    // if we got here, the copy was okay... otherwise, j was destroyed during
+    // stack unwinding and will handle
 	
     // the cleanup of dest to avoid leaking memory
     
@@ -1433,8 +1404,8 @@ Are you thinking about doing your own class-specific memory management, or even 
 Here are excerpts from a program with classes that perform their own memory management. Point out as many memory- related errors as possible, and answer the additional questions.
 
 ``` cpp
-//  Why do B's operators delete have a second parameter,
-//  whereas D's do not?
+//  Why do B's operators delete have a second parameter, whereas D's do not?
+
 class B {
 public:
     virtual ~B();
@@ -1450,8 +1421,8 @@ public:
 };
 
 void f() {
-    //  Which operator delete is called for each of the
-    //  following?  Why, and with what parameters?
+    //  Which operator delete is called for each of the following?  Why,
+    //  and with what parameters?
     D* pd1 = new D;
     delete pd1;
 
@@ -1513,8 +1484,8 @@ void operator delete(void* p, std::nothrow_t&) throw() {
 **Solution**
 
 ``` cpp
-//  Why do B's operators delete have a second parameter,
-//  whereas D's do not?
+//  Why do B's operators delete have a second parameter, whereas D's do not?
+
 class B {
 public:
     virtual ~B();
@@ -1536,9 +1507,9 @@ However, both classes provide operators `delete` and `delete[]` without providin
 
 ``` cpp
 void f(){
-    //  Which operator delete is called for each of the
-    //  following?  Why, and with what parameters?
-    //
+    //  Which operator delete is called for each of the following?  
+    //  Why, and with what parameters?
+
     D* pd1 = new D;
     delete pd1;
 ```
@@ -1566,7 +1537,7 @@ Undefined behaviour. The language requires that the static type of the pointer t
 
 ``` cpp
     //  Are the following two assignments legal?
-    //
+
     B b;
     typedef void (B::*PMF)(void*, size_t);
     PMF p1 = &B::f;
@@ -1626,8 +1597,7 @@ Further, the memory cannot safely be deleted since the class does not provide a 
 This operator delete is useless since it can never be called.
 
 ``` cpp
-void operator delete(void* p) throw() 
-{
+void operator delete(void* p) throw() {
     SharedMemory::Deallocate(p);
 }
 ```
@@ -1818,7 +1788,7 @@ int main(int, char*[]) {
 using namespace std;
 
 //  The following lines come from other header files.
-//
+
 char* itoa(int value, char* workArea, int radix);
 extern int fileIdCounter;
 ```
@@ -1827,7 +1797,7 @@ The presence of a global variable should already put us on the lookout for clien
 
 ``` cpp
 //  Helpers to automate class invariant checking.
-//
+
 template<class T>
 inline void AAssert(T& p) {
     static int localFileId = ++fileIdCounter;
@@ -1853,8 +1823,7 @@ private:
     T& p_;
 };
 
-#define AINVARIANT_GUARD AInvariant<AIType> \
-                         invariantChecker(*this)
+#define AINVARIANT_GUARD AInvariant<AIType> invariantChecker(*this)
 ```
 
 These helpers are an interesting idea, where any client class that would like to automatically check its class invariants before and after function calls simply writes a typedef of `AIType` to itself, then writes "`AINVARIANT_GUARD;`" as the first line of member functions. Not entirely bad, in itself.
@@ -2122,37 +2091,33 @@ Instead of rewriting much of the common logic each time, a programmer has tried 
 ``` cpp
 //---------------------------------------------------
 // File gta.h
-//---------------------------------------------------
+//-----------------------------------------------------------------------------
+
 class GenericTableAlgorithm {
 public:
     GenericTableAlgorithm(const string& table);
     virtual ~GenericTableAlgorithm();
     
     // Process() returns true iff successful.
-    // It does all the work: a) physically reads
-    // the table's records, calling Filter() on each
-    // to determine whether it should be included
-    // in the rows to be processed; and b) when the
-    // list of rows to operate upon is complete, calls
-    // ProcessRow() for each such row.
+    // It does all the work: a) physically reads the table's records, calling
+    // Filter() on each to determine whether it should be included in the rows
+    // to be processed; and b) when the list of rows to operate upon is 
+    // complete, calls ProcessRow() for each such row.
 
     bool Process();
 
 private:
-    // Filter() returns true iff the row should be
-    // included in the ones to be processed.  The
-    // default action is to include every row.
-    //
+    // Filter() returns true iff the row should be included in the ones to be
+    // processed.  The default action is to include every row.
+
     virtual bool Filter(const Record&) {
       return true;
     }
     
-    // ProcessRow() is called once per record that
-    // was included for processing.  This is where
-    // the concrete class does its specialized work.
-    // (Note: This means every row to be processed
-    // will be read twice, but assume that that is
-    // necessary and not an efficiency consideration.)
+    // ProcessRow() is called once per record that was included for processing.
+    // This is where the concrete class does its specialized work.
+    // (Note: This means every row to be processed will be read twice, but 
+    // assume that that is necessary and not an efficiency consideration.)
 
     virtual bool ProcessRow(const PrimaryKey&) =0;
     
@@ -2164,8 +2129,9 @@ For example, the client code to derive a concrete worker class and use it in a m
 
 ``` cpp
 class MyAlgorithm : public GenericTableAlgorithm {
-    // ... override Filter() and ProcessRow() do
-    //     implement a specific operation ...
+    // ... 
+    // override Filter() and ProcessRow() do implement a specific operation
+    // ...
 };
 
 int main(int, char*[]) {
@@ -2210,14 +2176,14 @@ In the original version, GenericTableAlgorithm is burdened with two different an
 That said, let's look at some improved code:
 
 ``` cpp
-//---------------------------------------------------
+//-----------------------------------------------------------------------------
 // File gta.h
-//---------------------------------------------------
+//-----------------------------------------------------------------------------
 
-// Responsibility #1: Providing a public interface that encapsulates 
-// common functionality as a template method.  This has nothing to do
-// with inheritance relationships, and can be nicely isolated to stand
-// on its own in a better-focused class.  
+// Responsibility #1: Providing a public interface that encapsulates common 
+// functionality as a template method.  This has nothing to do with inheritance
+// relationships, and can be nicely isolated to stand on its own in a 
+// better-focused class. 
 // The target audience is external users of GenericTableAlgorithm.
 
 class GTAClient;
@@ -2241,9 +2207,9 @@ private:
 ```
 
 ``` cpp
-//---------------------------------------------------
+//-----------------------------------------------------------------------------
 // File gtaclient.h
-//---------------------------------------------------
+//-----------------------------------------------------------------------------
 
 // Responsibility #2: Providing an abstract interface for extensibility.  
 // This is an implementation detail of GenericTableAlgorithm that has nothing
