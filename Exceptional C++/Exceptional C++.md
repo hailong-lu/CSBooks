@@ -2952,18 +2952,17 @@ In summary, from the GotW coding standards:
 
 
 # 020 Code Complexity - Part I
-Difficulty: 9 / 10
+**Difficulty: 9 / 10**
 This problem presents an interesting challenge: How many execution paths can there be in a simple three-line function? The answer will almost certainly surprise you.
 
 ----
 
-Problem
+**Problem**
 Without being given any additional information, how many execution paths could there be in the following code?
+
 ``` cpp
-String EvaluateSalaryAndReturnName( Employee e )
-{
-    if( e.Title() == "CEO" || e.Salary() > 100000 )
-    {
+String EvaluateSalaryAndReturnName(Employee e) {
+    if(e.Title() == "CEO" || e.Salary() > 100000)     {
         cout << e.First() << " " << e.Last() << " is overpaid" << endl;
     }
     return e.First() + " " + e.Last();
@@ -2972,17 +2971,17 @@ String EvaluateSalaryAndReturnName( Employee e )
 
 ----
 
-Solution
+**Solution**
 Assumptions:
 
-a) Different orders of evaluating function parameters and exceptions thrown by destructors are ignored.[1]
+**a)** Different orders of evaluating function parameters and exceptions thrown by destructors are ignored.[1]
 
 Followup question for the intrepid:
 How many more execution paths are there if destructors are allowed to throw?
 
-b) Called functions are considered atomic. For example, the call "e.Title()" could throw for several reasons (e.g., it could throw an exception itself, it could fail to catch an exception thrown by another function it has called, or it could return by value and the temporary object's constructor could throw). All that matters to the function is whether performing the operation e.Title() results in an exception being thrown or not.
+**b)** Called functions are considered atomic. For example, the call "`e.Title()`" could throw for several reasons (e.g., it could throw an exception itself, it could fail to catch an exception thrown by another function it has called, or it could return by value and the temporary object's constructor could throw). All that matters to the function is whether performing the operation `e.Title()` results in an exception being thrown or not.
 
-Answer: 23 (in just four lines of code!)
+Answer: **23** (in just four lines of code!)
 
         If you found:       Rate yourself:
             3                   Average
@@ -2994,63 +2993,70 @@ Answer: 23 (in just four lines of code!)
             - 20 invisible exceptional code paths
 For the non-exceptional execution paths, the trick was to know C/C++'s short-circuit evaluation rule:
 
-1. If `e.Title() == "CEO"` then the second part of the condition doesn't need to be be evaluated (e.g., `e.Salary()` will never get called), but the cout will be performed.[2]
+**1.** If `e.Title() == "CEO"` then the second part of the condition doesn't need to be be evaluated (e.g., `e.Salary()` will never get called), but the cout will be performed.[2]
 
-2. `If e.Title() != "CEO"` but `e.Salary() > 100000`, both parts of the condition will be evaluated and the cout will be performed.
+**2.** `If e.Title() != "CEO"` but `e.Salary() > 100000`, both parts of the condition will be evaluated and the cout will be performed.
 
-3. `If e.Title() != "CEO"` and `e.Salary() <= 100000`, the cout will not be performed.
+**3.** `If e.Title() != "CEO"` and `e.Salary() <= 100000`, the cout will not be performed.
 
 This leaves the exceptional execution paths:
+
 ``` cpp
-String EvaluateSalaryAndReturnName( Employee e )
+String EvaluateSalaryAndReturnName(Employee e)
   ^*^                                       ^4^
 ```
-4. The argument is passed by value, which invokes the Employee copy constructor. This copy operation might throw.
+
+**4.** The argument is passed by value, which invokes the Employee copy constructor. This copy operation might throw.
 
 \*. String's copy constructor might throw while copying the temporary return value into the caller's area. We'll ignore this one, however, since it happens outside this function (and it turns out that we have enough execution paths of our own to keep us busy anyway!).
+
 ``` cpp
-if( e.Title() == "CEO" || e.Salary() > 100000 )
-       ^5^   ^7^  ^6^ ^11^   ^8^    ^10^  ^9^
+if(e.Title() == "CEO" || e.Salary() > 100000)
+      ^5^   ^7^  ^6^ ^11^   ^8^    ^10^  ^9^
 ```
-5. The `Title()` member function might itself throw, or it might return an object of class type by value, and that copy operation might throw.
 
-6. To match a valid `operator==`, the string literal may need to be converted to a temporary object of class type (probably the same as `e.Title()`'s return type), and that construction of the temporary might throw.
+**5.** The `Title()` member function might itself throw, or it might return an object of class type by value, and that copy operation might throw.
 
-7. If `operator==` is a programmer-supplied function, it might throw.
+**6.** To match a valid `operator==`, the string literal may need to be converted to a temporary object of class type (probably the same as `e.Title()`'s return type), and that construction of the temporary might throw.
 
-8. Similarly to #5, `Salary()` might itself throw, or it might return a temporary object and this construction operation might throw.
+**7.** If `operator==` is a programmer-supplied function, it might throw.
 
-9. Similarly to #6, a temporary object may need to be constructed and this construction might throw.
+**8.** Similarly to #5, `Salary()` might itself throw, or it might return a temporary object and this construction operation might throw.
 
-10. Similarly to #7, this might be a programmer-provided function and therefore might throw.
+**9.** Similarly to #6, a temporary object may need to be constructed and this construction might throw.
 
-11. Similarly to #7 and #10, this might be a programmer-provided function and therefore might throw (see note [2] again).
+**10.** Similarly to #7, this might be a programmer-provided function and therefore might throw.
+
+**11.** Similarly to #7 and #10, this might be a programmer-provided function and therefore might throw (see note [2] again).
+
 ``` cpp
 cout << e.First() << " " << e.Last()
          ^17^                ^18^
      << " is overpaid" << endl;
 ```
-12-16. As documented in the draft standard, any of the five calls to `operator<<` might throw.
 
-17-18. Similarly to #5, `First()` and/or `Last()` might throw, or each might return a temporary object and those construction operations might throw.
+**12-16.** As documented in the draft standard, any of the five calls to `operator<<` might throw.
+
+**17-18.** Similarly to #5, `First()` and/or `Last()` might throw, or each might return a temporary object and those construction operations might throw.
+
 ``` cpp
 return e.First()  +  " "   +   e.Last();
          ^19^   ^22^ ^21^ ^23^  ^20^
 ```
-19-20. Similarly to #5, `First()` and/or `Last()` might throw, or each might return a temporary object and those construction operations might throw.
 
-21. Similarly to #6, a temporary object may need to be constructed and this construction might throw.
+**19-20.** Similarly to #5, `First()` and/or `Last()` might throw, or each might return a temporary object and those construction operations might throw.
 
-22-23. Similarly to #7, this might be a programmer-provided function and therefore might throw.
+**21.** Similarly to #6, a temporary object may need to be constructed and this construction might throw.
+
+**22-23.** Similarly to #7, this might be a programmer-provided function and therefore might throw.
 
 One purpose of this GotW was to demonstrate just how many invisible execution paths can exist in simple code in a language that allows exceptions. Does this invisible complexity affect the function's reliability and testability? See the following GotW problem for the answer.
 
- 
 
-Notes
-1. Never allow an exception to propagate from a destructor. Code that does this can't be made to work well. See my article in the Nov/Dec 1997 issue of C++ Report for more about Destructors That Throw and Why They're Evil.
-
-2. With suitable overloads for `==`, `||`, and`/`or `>` in the if's condition, the `||` could actually turn out to be a function call. If it is a function call, the short-circuit evaluation rule would be suppressed and both parts of the condition would be evaluated all the time.
+**Notes**
+   1. Never allow an exception to propagate from a destructor. Code that does this can't be made to work well. See [my article in the Nov/Dec 1997 issue of C++ Report](http://www.awlonline.com/cseng/meyerscddemo/DEMO/MAGAZINE/SU_FRAME.HTM) for more about Destructors That Throw and Why They're Evil.
+   
+   2. With suitable overloads for `==`, `||`, and`/`or `>` in the if's condition, the `||` could actually turn out to be a function call. If it is a function call, the short-circuit evaluation rule would be suppressed and both parts of the condition would be evaluated all the time.
 
 
 
