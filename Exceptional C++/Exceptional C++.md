@@ -37,7 +37,7 @@ SomeType t = u;
 ```
 This is copy initialization, and the variable t is always initialised using `SomeType`'s copy ctor. (Even though there's an "`=`" there, that's just a syntax holdover from C... this is always initialization, never assignment, and so `operator=` is never called.)
 
-Semantics: If u also has type `SomeType`, this is the same as "`SomeType t(u)`" and just calls `SomeType`'s copy ctor. If u is of some other type, then this is the same as "`SomeType t( SomeType(u) )`"... that is, u is converted to a temporary `SomeType` object, and t is copy-constructed from that.
+Semantics: If u also has type `SomeType`, this is the same as "`SomeType t(u)`" and just calls `SomeType`'s copy ctor. If u is of some other type, then this is the same as "`SomeType t(SomeType(u))`"... that is, u is converted to a temporary `SomeType` object, and t is copy-constructed from that.
 
 **Note:** The compiler is actually allowed (but not required) to optimize away the copy construction in this kind of situation. If it does optimize it, the copy ctor must still be accessible.
 **[Guideline]** Prefer using the form "`SomeType t(u)`". It always works wherever "`SomeType t = u`" works, and has other advantages (for instance, it can take multiple parameters).
@@ -54,9 +54,9 @@ You are doing a code review. A programmer has written the following function, wh
 How many can you identify, and how should the programmer fix them?
 
 ``` cpp
-string FindAddr( list<Employee> l, string name ) {
+string FindAddr(list<Employee> l, string name) {
     for(list<Employee>::iterator i = l.begin(); i != l.end(); i++) {
-        if( *i == name ) {
+        if(*i == name) {
             return (*i).addr;
         }
     }
@@ -155,7 +155,7 @@ Original flawed version:
 ``` cpp
 string FindAddr(list<Employee> l, string name) {
     for(list<Employee>::iterator i = l.begin(); i != l.end(); i++) {
-        if( *i == name ) {
+        if(*i == name) {
             return (*i).addr;
         }
     }
@@ -363,32 +363,29 @@ public:
         return *this;
     }
 
-    const Complex operator++( int ) {
+    const Complex operator++(int) {
         Complex temp = *this;
         ++(*this);
         return temp;
     }
 
-    ostream& print( ostream& os ) const {
-        return os << "(" << real_
-                  << "," << imaginary_ << ")";
+    ostream& print(ostream& os) const {
+        return os << "(" << real_ << "," << imaginary_ << ")";
     }
 
 private:
     double real_, imaginary_;
     friend ostream& 
-    operator<<( ostream& os, const Complex& c );
+    operator<<(ostream& os, const Complex& c);
 };
 
-const Complex operator+( const Complex& lhs,
-                         const Complex& rhs ) {
-    Complex ret( lhs );
+const Complex operator+(const Complex& lhs, const Complex& rhs) {
+    Complex ret(lhs);
     ret += rhs;
     return ret;
 }
 
-ostream& operator<<( ostream& os,
-                     const Complex& c ) {
+ostream& operator<<(ostream& os, const Complex& c) {
     return c.print(os);
 }
 ```
@@ -571,7 +568,7 @@ public:
     }
   
     double GetArea() {
-        if( area_ < 0 ) // if not yet calculated and cached
+        if(area_ < 0) // if not yet calculated and cached
             CalcArea();     // calculate now
         return area_;
     }
@@ -594,7 +591,7 @@ Polygon operator+(Polygon& lhs, Polygon& rhs) {
     Polygon ret = lhs;
     int last = rhs.GetNumPoints();
     for(int i = 0; i < last; ++i) // concatenate
-        ret.AddPoint( rhs.GetPoint(i) );
+        ret.AddPoint(rhs.GetPoint(i));
     return ret;
 }
 
@@ -606,7 +603,7 @@ void g(Polygon& const rPoly) {
     rPoly.AddPoint(Point(1,1));
 }
 
-void h( Polygon* const pPoly ) {
+void h(Polygon* const pPoly) {
     pPoly->AddPoint(Point(2,2));
 }
 
@@ -787,13 +784,17 @@ class Polygon {
 public:
     Polygon() : area_(-1) {}
 
-    void  AddPoint( Point pt )       { InvalidateArea();
-                                       points_.push_back(pt); }
-    const Point GetPoint( int i ) const  { return points_[i]; }
-    int         GetNumPoints() const { return points_.size(); }
+    void  AddPoint(Point pt) {
+        InvalidateArea();
+        points_.push_back(pt);
+    }
+    
+    const Point GetPoint(int i) const  { return points_[i]; }
+    
+    int GetNumPoints() const { return points_.size(); }
 
     double GetArea() const {
-        if( area_ < 0 ) // if not yet calculated and cached
+        if(area_ < 0) // if not yet calculated and cached
             CalcArea();     // calculate now
         return area_;
     }
@@ -804,7 +805,7 @@ private:
     void CalcArea() const {
         area_ = 0;
         vector<Point>::const_iterator i;
-        for( i = points_.begin(); i != points_.end(); ++i )
+        for(i = points_.begin(); i != points_.end(); ++i)
             area_ += /* some work */;
     }
 
@@ -812,23 +813,23 @@ private:
     mutable double area_;
 };
 
-const Polygon operator+( const Polygon& lhs, const Polygon& rhs ) {
+const Polygon operator+(const Polygon& lhs, const Polygon& rhs) {
     Polygon ret = lhs;
     const int last = rhs.GetNumPoints();
-    for( int i = 0; i < last; ++i ) // concatenate
-        ret.AddPoint( rhs.GetPoint(i) );
+    for(int i = 0; i < last; ++i) // concatenate
+        ret.AddPoint(rhs.GetPoint(i));
     return ret;
 }
 
-void f( Polygon& poly ) {
+void f(Polygon& poly) {
     poly.AddPoint(Point(0,0));
 }
 
-void g( Polygon& rPoly ) {
+void g(Polygon& rPoly) {
    rPoly.AddPoint(Point(1,1)); 
 }
 
-void h( Polygon* pPoly ) {
+void h(Polygon* pPoly) {
    pPoly->AddPoint(Point(2,2)); 
 }
 
@@ -848,7 +849,7 @@ Most programmers #include many more headers than necessary. Do you? To find out,
 ----
 
 **Problem**
-[Warning: It's tougher than it looks. The comments are important.]
+\[Warning: It's tougher than it looks. The comments are important.]
 
 Most programmers #include much more than necessary. This can seriously degrade build times, especially when a popular header file includes too many other headers.
 
@@ -856,7 +857,7 @@ In the following header file, what `#include` directives could be immediately re
 
 ``` cpp
 // gotw007.h (implementation file is gotw007.cpp)
-//
+
 #include "a.h"  // class A
 #include "b.h"  // class B
 #include "c.h"  // class C
@@ -888,7 +889,7 @@ std::ostream& operator<<(std::ostream& os, const X& x) {
 
 class Y : private B {
 public:
-    C  Function4( A );
+    C  Function4(A);
 private:
     std::list<std::wostringstream*> alist_;
 };
@@ -932,7 +933,7 @@ std::ostream& operator<<(std::ostream& os, const X& x) {
 
 class Y : private B {
 public:
-    C  Function4( A );
+    C  Function4(A);
 private:
     std::list<std::wostringstream*> alist_;
 };
@@ -1014,7 +1015,7 @@ class C;
 
 class Y {
 public:
-    C  Function4( A );
+    C  Function4(A);
 private:
     class YImpl* pimpl_;
 };
@@ -1090,7 +1091,7 @@ private:
 
 **3.** Should containers be exception-neutral? Why or why not? What are the tradeoffs?
 
-**4.** Should containers use exception specifications? For example, should we declare "`Stack::Stack() throw( bad_alloc );`"?
+**4.** Should containers use exception specifications? For example, should we declare "`Stack::Stack() throw(bad_alloc);`"?
 
 **CHALLENGE**
 With many current compilers, using "`try`" and "`catch`" often adds unnecessary overhead to your programs, which would be nice to avoid in this kind of low-level reusable container. Can you implement all Stack member functions as required without ever using "`try`" or "`catch`"?
@@ -1177,7 +1178,7 @@ Stack<T>::Stack(const Stack<T>& other)
     vsize_(other.vsize_),
     vused_(other.vused_)
 {
-    v_ = NewCopy( other.v_, other.vsize_, other.vsize_ );
+    v_ = NewCopy(other.v_, other.vsize_, other.vsize_);
     // if we got here, the copy construction was okay
 }
 
@@ -1187,7 +1188,7 @@ Stack<T>& Stack<T>::operator=(const Stack<T>& other)
 {
     if(this != &other) 
 	{
-        T* v_new = NewCopy( other.v_, other.vsize_, other.vsize_ );
+        T* v_new = NewCopy(other.v_, other.vsize_, other.vsize_);
         // if we got here, the allocation and copy were okay
 
         delete[] v_;
@@ -1218,7 +1219,7 @@ unsigned Stack<T>::Count()
 
 //----- PUSH ------------------------------------------------------
 template<class T>
-void Stack<T>::Push( const T& t ) {
+void Stack<T>::Push(const T& t) {
     if(vused_ == vsize_)  // grow if necessary
     {
         unsigned vsize_new = (vsize_+1)*2; // grow factor
@@ -1320,7 +1321,7 @@ This is currently unspecified. Lately there has been some discussion within the 
 
 Some containers have operations with unavoidable space tradeoffs if they are to be made exception-neutral. Exception-neutrality is a Good Thing in itself, but may not be practical when implementing the strong guarantee requires much more space or time than does implementing the weak guarantee. Often a good compromise is to document which T operations are expected not to throw and then guarantee exception-neutrality based on conformance to those assumptions.
 
-**4.** Should containers use exception specifications? For example, should we declare "`Stack::Stack() throw( bad_alloc );`"?
+**4.** Should containers use exception specifications? For example, should we declare "`Stack::Stack() throw(bad_alloc);`"?
 
 No, since it is unknown in advance which T operations might throw or what they might throw.
 
@@ -1368,7 +1369,7 @@ T* NewCopy(const T* src, unsigned srcsize, unsigned destsize)
 
     struct Janitor {
         Janitor(T* p) : pa(p) {}
-        ~Janitor() { if( uncaught_exception() ) delete[] pa; }
+        ~Janitor() { if(uncaught_exception()) delete[] pa; }
         T* pa;
     };
     
@@ -1573,7 +1574,7 @@ Undefined behaviour. The language requires that the static type of the pointer t
 }
 ```
 
-The first assignment is fine, but the second assignment is illegal because "`void operator delete( void*, size_t ) throw()`" is NOT a member function of B even though as written above it may look like one. The trick here is to remember that operators new and delete are always static, even if not explicitly declared static. It's a good habit to always declare them static, just to make sure that the fact is obvious to all programmers reading through your code.
+The first assignment is fine, but the second assignment is illegal because "`void operator delete(void*, size_t) throw()`" is NOT a member function of B even though as written above it may look like one. The trick here is to remember that operators new and delete are always static, even if not explicitly declared static. It's a good habit to always declare them static, just to make sure that the fact is obvious to all programmers reading through your code.
 
 ``` cpp
 class X {
@@ -1722,19 +1723,18 @@ How well do you really know the order in which C++ code is executed? Test your k
 using namespace std;
 
 //  The following lines come from other header files.
-//
-char* itoa(int value, char* workArea, int radix );
+
+char* itoa(int value, char* workArea, int radix);
 extern int fileIdCounter;
 
 //  Helpers to automate class invariant checking.
-//
+
 template<class T>
 inline void AAssert(T& p) {
     static int localFileId = ++fileIdCounter;
     if(!p.Invariant()) {
-        cerr << "Invariant failed: file " << localFileId
-             << ", " << typeid(p).name()
-             << " at " << static_cast<void*>(&p) << endl;
+        cerr << "Invariant failed: file " << localFileId << ", " 
+             << typeid(p).name() << " at " << static_cast<void*>(&p) << endl;
         assert(false);
     }
 }
@@ -1742,14 +1742,13 @@ inline void AAssert(T& p) {
 template<class T>
 class AInvariant {
 public:
-    AInvariant(T&  ) : p_(p) { AAssert(p_); }
+    AInvariant(T&) : p_(p) { AAssert(p_); }
     ~AInvariant()            { AAssert(p_); }
 private:
     T& p_;
 };
 
-#define AINVARIANT_GUARD AInvariant<AIType> /
-                         invariantChecker(*this)
+#define AINVARIANT_GUARD AInvariant<AIType> invariantChecker(*this)
 
 //-------------------------------------------------
 class Array : private ArrayBase, public Container {
@@ -1942,9 +1941,9 @@ What the last line really amounts to is something like this, since `+` calls are
             operator+(
                 operator+(
                     operator+(string("size = "),
-                              itoa(size_,buf,10) ) ,
-                    ", y = " ) ,
-                itoa(used_,buf,10) );
+                              itoa(size_,buf,10)) ,
+                    ", y = ") ,
+                itoa(used_,buf,10));
 ```
 
 Say that `size_` is `10` and `used_` is `5`. Then if the outer `operator+()`'s first parameter is evaluated first, the output will be the correct "`size = 10, used = 5`" since the results of the first `itoa()` is used and stored in a temporary string before the second `itoa()` reuses the same buffer. If the outer `operator+()`'s second parameter is evaluated first (as it is, for example, under MSVC 4.x), the output will be the incorrect "`size = 10, used = 10`" since the outer `itoa()` is executed first and then the inner `itoa()` will clobber the results of the outer `itoa()` before either value is used.
@@ -1960,7 +1959,7 @@ The call to `Resize()` has two problems.
 
 1. In this case, the program wouldn't work at all anyway, since if the condition is true then `Resize()` will be called, only to immediately call `Invariant()` again, which will find the condition still true and will call `Resize()` again, which... you get the idea.
 
-2. What if, for efficiency, the writer of `AAssert()` decided to remove the error reporting and simply wrote "`assert( p->Invariant() );`"? Then this client code becomes deplorable style, because it puts code with side effects inside an `assert()` call. This means the program's behaviour will be different when compiled in debug mode than it is when compiled in release mode. Even without the first problem above, this would be bad because it means that Array objects will resize at different times depending on the build mode, which will make the testers' lives a living hell as they try to reproduce customer problems on a debug build that ends up having a different runtime memory image characteristics.
+2. What if, for efficiency, the writer of `AAssert()` decided to remove the error reporting and simply wrote "`assert(p->Invariant());`"? Then this client code becomes deplorable style, because it puts code with side effects inside an `assert()` call. This means the program's behaviour will be different when compiled in debug mode than it is when compiled in release mode. Even without the first problem above, this would be bad because it means that Array objects will resize at different times depending on the build mode, which will make the testers' lives a living hell as they try to reproduce customer problems on a debug build that ends up having a different runtime memory image characteristics.
 
 Bottom line: Never write code with side effects inside a call to `assert()` (or something that might be one), and always make sure your recursions really terminate.
 
@@ -2136,7 +2135,7 @@ public:
     // in the rows to be processed; and b) when the
     // list of rows to operate upon is complete, calls
     // ProcessRow() for each such row.
-    //
+
     bool Process();
 
 private:
@@ -2154,7 +2153,7 @@ private:
     // (Note: This means every row to be processed
     // will be read twice, but assume that that is
     // necessary and not an efficiency consideration.)
-    //
+
     virtual bool ProcessRow(const PrimaryKey&) =0;
     
     class GenericTableAlgorithmImpl* pimpl_; // MYOB
@@ -2169,8 +2168,8 @@ class MyAlgorithm : public GenericTableAlgorithm {
     //     implement a specific operation ...
 };
 
-int main( int, char*[] ) {
-    MyAlgorithm a( "Customer" );
+int main(int, char*[]) {
+    MyAlgorithm a("Customer");
     a.Process();
 }
 ```
@@ -2383,14 +2382,14 @@ public:
     fixed_vector() { }
     
     template<typename O, size_t osize>
-    fixed_vector( const fixed_vector<O,osize>& other ) {
-        copy( other.begin(), other.begin()+min(size,osize), begin() );
+    fixed_vector(const fixed_vector<O,osize>& other) {
+        copy(other.begin(), other.begin()+min(size,osize), begin());
     }
     
     template<typename O, size_t osize>
     fixed_vector<T,size>&
-    operator=( const fixed_vector<O,osize>& other ) {
-        copy( other.begin(), other.begin()+min(size,osize), begin() );
+    operator=(const fixed_vector<O,osize>& other) {
+        copy(other.begin(), other.begin()+min(size,osize), begin());
         return *this;
     }
     
@@ -2416,20 +2415,20 @@ Here's why: A copy constructor or copy assignment operator specifically `constru
 ``` cpp
 struct X {
     template<typename T>
-    X( const T& );    // NOT copy ctor, T can't be X
+    X(const T&);    // NOT copy ctor, T can't be X
     
     template<typename T>
-    operator=( const T& );   // NOT copy ass't, T can't be X
+    operator=(const T&);   // NOT copy ass't, T can't be X
 };
 ```
 
-"But," you say, "those two templated member functions could exactly match the signatures of copy construction and copy assignment!" Well, actually, no... they couldn't, because in both cases T may not be X. To quote from CD2 [note: also appears in the later official standard of 1998; "CD2" was "Comittee Draft 2" as of 1995]:
+"But," you say, "those two templated member functions could exactly match the signatures of copy construction and copy assignment!" Well, actually, no... they couldn't, because in both cases T may not be X. To quote from CD2 \[note: also appears in the later official standard of 1998; "CD2" was "Comittee Draft 2" as of 1995]:
 
-[12.8/2 note 4]
+\[12.8/2 note 4]
 
 Because a template constructor is never a copy constructor, the presence of such a template does not suppress the implicit declaration of a copy constructor.
 
-There's similar wording in [12.8/9 note 7] for copy assignment. So the proposed solution in fact still has the same copy constructor and copy assignment operator as the original code did, because the compiler still generates the implicit versions. What we've done is extended the construction and assignment flexibility, not replaced the old versions. For example, consider the following program:
+There's similar wording in \[12.8/9 note 7] for copy assignment. So the proposed solution in fact still has the same copy constructor and copy assignment operator as the original code did, because the compiler still generates the implicit versions. What we've done is extended the construction and assignment flexibility, not replaced the old versions. For example, consider the following program:
 
 ``` cpp
     fixed_vector<char,4> v;
@@ -2488,7 +2487,7 @@ I happen to like the syntax and usability of the above functions, but there are 
 
 ``` cpp
 template<Iter>
-fixed_vector( Iter first, Iter last ) {
+fixed_vector(Iter first, Iter last) {
   copy(first, first+min(size,last-first), begin());
 }
 ```
@@ -2796,11 +2795,11 @@ int main(int, char*[]) {
     
     *last = "12/30/95";
     
-    copy(first, last, ostream_iterator<Date>( cout, "\n" ));
+    copy(first, last, ostream_iterator<Date>(cout, "\n"));
     
     e.insert(--e.end(), TodaysDate());
     
-    copy(first, last, ostream_iterator<Date>( cout, "\n" ));
+    copy(first, last, ostream_iterator<Date>(cout, "\n"));
 }
 ```
 
@@ -3143,7 +3142,7 @@ We still have one minor quibble, however, as illustrated by the following client
 
 ``` cpp
     String theName;
-    theName = EvaluateSalaryAndReturnName( bob );
+    theName = EvaluateSalaryAndReturnName(bob);
 ```
 
 The String copy constructor is invoked because the result is returned by value, and the copy assignment operator is invoked to copy the result into theName. If either copy fails, then the function has completed its side effects (since the message was completely emitted and the return value was completely constructed) but the result has been irretrievably lost (oops).
@@ -3167,7 +3166,7 @@ Unfortunately, the assignment to r might still fail, which leaves us with one si
 We might try returning the result in an auto_ptr (call this Attempt #3):
 
 ``` cpp
-auto_ptr<String> EvaluateSalaryAndReturnName( Employee e ) {
+auto_ptr<String> EvaluateSalaryAndReturnName(Employee e) {
     auto_ptr<String> result = new String(e.First() + " " + e.Last());
     
     if(e.Title() == "CEO" || e.Salary() > 100000) {
@@ -3243,7 +3242,7 @@ Ignoring the exception safety issues, the code happens to work in this setting b
 
 This technique is rarely if ever necessary in real code, and is a very bad habit to get into because it's fraught with (sometimes subtle) dangers if it appears in a member function:
 ``` cpp
-void T::f( int i ) {
+void T::f(int i) {
     this->~T();
     new (this) T(i);
 }
@@ -3277,8 +3276,8 @@ Following up from #22, this issue considers a C++ idiom that's frequently recomm
 Problem
 Critique the following idiom (shown as commonly presented):
 ``` cpp
-    T& T::operator=( const T& other ) {
-        if( this != &other ) {
+    T& T::operator=(const T& other) {
+        if(this != &other) {
             this->~T();
             new (this) T(other);
         }
@@ -3296,8 +3295,8 @@ Critique the following idiom (shown as commonly presented):
 Solution
 Critique the following idiom (shown as commonly presented):
 ``` cpp
-    T& T::operator=( const T& other ) {
-        if( this != &other ) {
+    T& T::operator=(const T& other) {
+        if(this != &other) {
             this->~T();
             new (this) T(other);
         }
@@ -3325,8 +3324,8 @@ The line "this->~T();" does the wrong thing if T is a base class with a virtual 
 In particular, this makes life a living hell for authors of derived classes (and there are other potential traps for derived classes, see below). Recall that derived assignment operators are normally written in terms of the base's assignment as follows:
 ``` cpp
     Derived&
-    Derived::operator=( const Derived& other ) {
-        Base::operator=( other );
+    Derived::operator=(const Derived& other) {
+        Base::operator=(other);
         // ...now assign Derived members here...
         return *this;
     }
@@ -3335,8 +3334,8 @@ In this case, we get:
 ``` cpp
     class U : /* ... */ T { /* ... */ };
 
-    U& U::operator=( const U& other ) {
-        T::operator=( other );
+    U& U::operator=(const U& other) {
+        T::operator=(other);
         // ...now assign U members here... oops
         return *this;                   // oops
     }
