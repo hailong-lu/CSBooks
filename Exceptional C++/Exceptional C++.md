@@ -2883,61 +2883,64 @@ When using iterators, be aware of four main issues:
 
 
 # 019 Automatic Conversions
-Difficulty: 4 / 10
+**Difficulty: 4 / 10**
 Automatic conversions from one type to another can be extremely convenient. This GotW covers a typical example to illustrate why they're also extremely dangerous.
 
 ----
 
-Problem
-The standard string has no automatic conversion to a const char*. Should it?
+**Problem**
+The standard string has no automatic conversion to a `const char*`. Should it?
 
-* * * * *
+----
 
-Background: It is often useful to be able to access a string as a C-style const char*. Indeed, string has a member function c_str() to do just that, which returns the const char*. Here's the difference in client code:
+Background: It is often useful to be able to access a string as a C-style const `char*`. Indeed, string has a member function `c_str()` to do just that, which returns the `const char*`. Here's the difference in client code:
+
 ``` cpp
     string s1("hello"), s2("world");
 
-    strcmp( s1, s2 );                // 1 (error)
-    strcmp( s1.c_str(), s2.c_str() ) // 2 (ok)
+    strcmp(s1, s2);                // 1 (error)
+    strcmp(s1.c_str(), s2.c_str()) // 2 (ok)
 ```
-It would certainly be nice to do #1, but #1 is an error because strcmp requires two pointers and there's no automatic conversion from string to const char*. #2 is okay, but longer to write because we have to call c_str() explicitly. Wouldn't it be better if we could just write #1?
+
+It would certainly be nice to do #1, but #1 is an error because strcmp requires two pointers and there's no automatic conversion from `string` to `const char*`. #2 is okay, but longer to write because we have to call `c_str()` explicitly. Wouldn't it be better if we could just write #1?
 
 ----
 
 Solution
-The standard string has no automatic conversion to a const char*. Should it?
+The standard string has no automatic conversion to a `const char*`. Should it?
 
 No, with good reason. It's almost always a good idea to avoid writing automatic conversions, either as conversion operators or as single-argument non-explicit constructors.[1]
 
 The two main reasons that implicit conversions are unsafe in general is that:
+   
+   a) they can interfere with overload resolution; and
+   
+   b) they can silently let "wrong" code compile cleanly.
 
-a) they can interfere with overload resolution; and
-
-b) they can silently let "wrong" code compile cleanly.
-
-If a string had an automatic conversion to const char*, that conversion could be implicitly called anywhere the compiler felt it was necessary. What this means is that you would get all sorts of subtle conversion problems \-\- the same ones you get into when you have non-explicit conversion constructors. It becomes far too easy to write code that looks right, is in fact not right and should fail, but by sheer coincidence will compile by doing something completely different from what was intended.
+If a string had an automatic conversion to `const char*`, that conversion could be implicitly called anywhere the compiler felt it was necessary. What this means is that you would get all sorts of subtle conversion problems \-\- the same ones you get into when you have non-explicit conversion constructors. It becomes far too easy to write code that looks right, is in fact not right and should fail, but by sheer coincidence will compile by doing something completely different from what was intended.
 
 There are many good examples. Here's a simple one:
+
 ``` cpp
     string s1, s2, s3;
 
     s1 = s2 - s3;   // oops, probably meant "+"
 ```
-The subtraction is meaningless and should be wrong. If string had an implicit conversion to const char*, however, this code would compile cleanly because the compiler would silently convert both strings to const char*'s and then subtract those pointers.
+
+The subtraction is meaningless and should be wrong. If string had an implicit conversion to `const char*`, however, this code would compile cleanly because the compiler would silently convert both `string`s to `const char*`'s and then subtract those pointers.
 
 In summary, from the GotW coding standards:
 
-- avoid writing conversion operators (Meyers96: 24-31; Murray93: 38, 41-43; Lakos96: 646-650)
+   - avoid writing conversion operators (Meyers96: 24-31; Murray93: 38, 41-43; Lakos96: 646-650)
+   
 
- 
-
-Notes
+**Notes**
 1. I've focused on the usual problems of implicit conversions, but there are other reasons why a string class should not have a conversion to const `char*`. Here are a few citations to further discussions:
 
    Koenig97: 290-292
    Stroustrup94 (D&E): 83
 
-Selected References
+**Selected References**
 |  | |
 |---|---|
 | Koenig97 | Andrew Koenig.<br/>"Ruminations on C++"<br/>Addison-Wesley, 1997 |
